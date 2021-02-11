@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="starter-pack">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/starter-pack/ec-2019-game-engine-jvm-full-2019.3.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/starter-pack/game-runner-jar-with-dependencies.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
