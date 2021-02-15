@@ -17,4 +17,10 @@ public class Worm {
 
     @SerializedName("movementRange")
     public int movementRange;
+
+    // Addition
+    @SerializedName("roundsUntilUnfrozen")
+    public int roundsUntilUnfrozen;
+
+
 }

@@ -34,6 +34,14 @@ public class Bot {
         Worm enemyWorm = getFirstWormInRange();
         if (enemyWorm != null) {
             Direction direction = resolveDirection(currentWorm.position, enemyWorm.position);
+            if (currentWorm.id == 3 && currentWorm.snowballs.count > 0 && enemyWorm.roundsUntilUnfrozen == 0) {
+                currentWorm.snowballs.count -= 1;
+                return new SnowballCommand(enemyWorm.position.x, enemyWorm.position.y);
+            }
+            else if (currentWorm.id == 2 && currentWorm.bananaBombs.count > 0){
+                currentWorm.bananaBombs.count -= 1;
+                return new BananaBombCommand(enemyWorm.position.x, enemyWorm.position.y);
+            }
             return new ShootCommand(direction);
         }
 
