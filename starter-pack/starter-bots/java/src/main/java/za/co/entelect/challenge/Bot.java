@@ -61,7 +61,7 @@ public class Bot {
 
 
         if (getTargetPos(currentStrat).x != -999) {
-            Cell block = ClosestCellIdxtoTarget(currentStrat, surroundingBlocks, getTargetPos(currentStrat));
+            Cell block = ClosestCelltoTarget(surroundingBlocks, getTargetPos(currentStrat));
             if (block.type == CellType.AIR) {
                 return new MoveCommand(block.x, block.y);
             } else if (block.type == CellType.DIRT) {
@@ -93,7 +93,7 @@ public class Bot {
 
         for (Worm enemyWorm : opponent.worms) {
             String enemyPosition = String.format("%d_%d", enemyWorm.position.x, enemyWorm.position.y);
-            if (cells.contains(enemyPosition)) {
+            if (cells.contains(enemyPosition) && enemyWorm.health > 0) {
                 return enemyWorm;
             }
         }
@@ -105,46 +105,59 @@ public class Bot {
         Position Middle = new Position();
         Middle.x = 16;
         Middle.y = 16;
+
+        Worm EnemyCommando = new Worm();
+        EnemyCommando.position = opponent.worms[0].position;
+        EnemyCommando.health = opponent.worms[0].health;
+        Worm EnemyAgent = new Worm();
+        EnemyAgent.position = opponent.worms[1].position;
+        EnemyAgent.health = opponent.worms[1].health;
+        Worm EnemyTechnical = new Worm();
+        EnemyTechnical.position = opponent.worms[2].position;
+        EnemyTechnical.health = opponent.worms[2].health;
+
         if (strat == 1) {// Go To Mid,
 //            Position Middle = new Position();
 //            Middle.x = 16;
 //            Middle.y = 16;
             return Middle;
-        } else if (strat == 2) { // HUNT
 
+        } else if (strat == 2) { // HUNT
+            int x;
+            int y;
             if (currentWorm.id == 1) { //Agent
                 int AllyCommPow = currentWorm.health;
 
-                if (AllyCommPow >= opponent.worms[0].health && opponent.worms[0].health > 0) {
-                    return opponent.worms[0].position;
-                } else if (AllyCommPow >= opponent.worms[1].health && opponent.worms[1].health > 0) {
-                    return opponent.worms[1].position;
-                } else if (AllyCommPow >= opponent.worms[2].health && opponent.worms[2].health > 0) {
-                    return opponent.worms[2].position;
+                if (AllyCommPow >= EnemyCommando.health && EnemyCommando.health > 0) {
+                    return EnemyCommando.position;
+                } else if (AllyCommPow >= EnemyAgent.health && EnemyAgent.health > 0) {
+                    return EnemyAgent.position;
+                } else if (AllyCommPow >= EnemyTechnical.health && EnemyTechnical.health > 0) {
+                    return EnemyTechnical.position;
                 }
             }
 
             else if (currentWorm.id == 2) { //Agent
                 int AllyAgentPow = currentWorm.bananaBombs.count * 20 + currentWorm.health;
 
-                if (AllyAgentPow >= opponent.worms[0].health && opponent.worms[0].health > 0) {
-                    return opponent.worms[0].position;
-                } else if (AllyAgentPow >= opponent.worms[1].health && opponent.worms[1].health > 0) {
-                    return opponent.worms[1].position;
-                } else if (AllyAgentPow >= opponent.worms[2].health && opponent.worms[2].health > 0) {
-                    return opponent.worms[2].position;
+                if (AllyAgentPow >= EnemyCommando.health && EnemyCommando.health > 0) {
+                    return EnemyCommando.position;
+                } else if (AllyAgentPow >= EnemyAgent.health && EnemyAgent.health > 0) {
+                    return EnemyAgent.position;
+                } else if (AllyAgentPow >= EnemyTechnical.health && EnemyTechnical.health > 0) {
+                    return EnemyTechnical.position;
                 }
             }
 
-            else if (currentWorm.id == 3 && opponent.worms[2].health > 0){ // Technical
+            else if (currentWorm.id == 3 && EnemyTechnical.health > 0){ // Technical
                 int AllyTechPow = currentWorm.snowballs.count * 25 + currentWorm.health;
 
-                if (AllyTechPow >= opponent.worms[0].health && opponent.worms[0].health > 0) {
-                    return opponent.worms[0].position;
-                } else if (AllyTechPow >= opponent.worms[1].health && opponent.worms[1].health > 0) {
-                    return opponent.worms[1].position;
-                } else if (AllyTechPow >= opponent.worms[2].health && opponent.worms[2].health > 0) {
-                    return opponent.worms[2].position;
+                if (AllyTechPow >= EnemyCommando.health && EnemyCommando.health > 0) {
+                    return EnemyCommando.position;
+                } else if (AllyTechPow >= EnemyAgent.health && EnemyAgent.health > 0) {
+                    return EnemyAgent.position;
+                } else if (AllyTechPow >= EnemyTechnical.health && EnemyTechnical.health > 0) {
+                    return EnemyTechnical.position;
                 }
             }
         }
@@ -154,20 +167,16 @@ public class Bot {
         return blank;
     }
 
-    private Cell ClosestCellIdxtoTarget(int strat, List<Cell> surrBlocks, Position targetPos){
+    private Cell ClosestCelltoTarget(List<Cell> surrBlocks, Position targetPos){
         int closestIdx = 0;
         int currRange;
         int closestRange;
-
         for (int i = 1; i < surrBlocks.size(); i++){
             Cell Block = surrBlocks.get(i);
-            Cell closestBlock = surrBlocks.get(closestIdx);
-            if (strat == 1) {
-                closestRange = euclideanDistance(closestBlock.x, closestBlock.y, targetPos.x, targetPos.y);
-                currRange = euclideanDistance(Block.x, Block.y, targetPos.x, targetPos.y);
-                if (currRange < closestRange) {
-                    closestIdx = i;
-                }
+            closestRange = euclideanDistance(surrBlocks.get(closestIdx).x, surrBlocks.get(closestIdx).y, targetPos.x, targetPos.y);
+            currRange = euclideanDistance(surrBlocks.get(i).x, surrBlocks.get(i).y, targetPos.x, targetPos.y);
+            if (currRange < closestRange) {
+                closestIdx = i;
             }
         }
         return surrBlocks.get(closestIdx);
