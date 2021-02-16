@@ -1,5 +1,6 @@
 package za.co.entelect.challenge;
 
+import javafx.geometry.Pos;
 import za.co.entelect.challenge.command.*;
 import za.co.entelect.challenge.entities.*;
 import za.co.entelect.challenge.enums.CellType;
@@ -14,12 +15,20 @@ public class Bot {
     private GameState gameState;
     private Opponent opponent;
     private MyWorm currentWorm;
+    private int currentStrat;
+
 
     public Bot(Random random, GameState gameState) {
         this.random = random;
         this.gameState = gameState;
         this.opponent = gameState.opponents[0];
         this.currentWorm = getCurrentWorm(gameState);
+        if (gameState.currentRound <= 10){
+            this.currentStrat = 2; // All worms goes to the middle of the map in early rounds.
+        }
+        else {
+            this.currentStrat = 2; // Hunt enemies
+        }
     }
 
     private MyWorm getCurrentWorm(GameState gameState) {
@@ -32,6 +41,8 @@ public class Bot {
     public Command run() {
 
         Worm enemyWorm = getFirstWormInRange();
+
+        //Combat
         if (enemyWorm != null) {
             Direction direction = resolveDirection(currentWorm.position, enemyWorm.position);
             if (currentWorm.id == 3 && currentWorm.snowballs.count > 0 && enemyWorm.roundsUntilUnfrozen == 0) {
@@ -45,17 +56,31 @@ public class Bot {
             return new ShootCommand(direction);
         }
 
+        //Movement
         List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
-        int cellIdx = random.nextInt(surroundingBlocks.size());
 
-        Cell block = surroundingBlocks.get(cellIdx);
-        if (block.type == CellType.AIR) {
-            return new MoveCommand(block.x, block.y);
-        } else if (block.type == CellType.DIRT) {
-            return new DigCommand(block.x, block.y);
+
+        if (getTargetPos(currentStrat).x != -999) {
+            Cell block = ClosestCellIdxtoTarget(currentStrat, surroundingBlocks, getTargetPos(currentStrat));
+            if (block.type == CellType.AIR) {
+                return new MoveCommand(block.x, block.y);
+            } else if (block.type == CellType.DIRT) {
+                return new DigCommand(block.x, block.y);
+            }
+        }
+        else {
+            int cellIdx = random.nextInt(surroundingBlocks.size());
+            Cell block = surroundingBlocks.get(cellIdx);
+
+            if (block.type == CellType.AIR) {
+                return new MoveCommand(block.x, block.y);
+            } else if (block.type == CellType.DIRT) {
+                return new DigCommand(block.x, block.y);
+            }
         }
 
         return new DoNothingCommand();
+
     }
 
     private Worm getFirstWormInRange() {
@@ -74,6 +99,78 @@ public class Bot {
         }
 
         return null;
+    }
+
+    private Position getTargetPos(int strat) {
+        Position Middle = new Position();
+        Middle.x = 16;
+        Middle.y = 16;
+        if (strat == 1) {// Go To Mid,
+//            Position Middle = new Position();
+//            Middle.x = 16;
+//            Middle.y = 16;
+            return Middle;
+        } else if (strat == 2) { // HUNT
+
+            if (currentWorm.id == 1) { //Agent
+                int AllyCommPow = currentWorm.health;
+
+                if (AllyCommPow >= opponent.worms[0].health && opponent.worms[0].health > 0) {
+                    return opponent.worms[0].position;
+                } else if (AllyCommPow >= opponent.worms[1].health && opponent.worms[1].health > 0) {
+                    return opponent.worms[1].position;
+                } else if (AllyCommPow >= opponent.worms[2].health && opponent.worms[2].health > 0) {
+                    return opponent.worms[2].position;
+                }
+            }
+
+            else if (currentWorm.id == 2) { //Agent
+                int AllyAgentPow = currentWorm.bananaBombs.count * 20 + currentWorm.health;
+
+                if (AllyAgentPow >= opponent.worms[0].health && opponent.worms[0].health > 0) {
+                    return opponent.worms[0].position;
+                } else if (AllyAgentPow >= opponent.worms[1].health && opponent.worms[1].health > 0) {
+                    return opponent.worms[1].position;
+                } else if (AllyAgentPow >= opponent.worms[2].health && opponent.worms[2].health > 0) {
+                    return opponent.worms[2].position;
+                }
+            }
+
+            else if (currentWorm.id == 3 && opponent.worms[2].health > 0){ // Technical
+                int AllyTechPow = currentWorm.snowballs.count * 25 + currentWorm.health;
+
+                if (AllyTechPow >= opponent.worms[0].health && opponent.worms[0].health > 0) {
+                    return opponent.worms[0].position;
+                } else if (AllyTechPow >= opponent.worms[1].health && opponent.worms[1].health > 0) {
+                    return opponent.worms[1].position;
+                } else if (AllyTechPow >= opponent.worms[2].health && opponent.worms[2].health > 0) {
+                    return opponent.worms[2].position;
+                }
+            }
+        }
+        Position blank = new Position();
+        blank.x = -999;
+        blank.y = -999;
+        return blank;
+    }
+
+    private Cell ClosestCellIdxtoTarget(int strat, List<Cell> surrBlocks, Position targetPos){
+        int closestIdx = 0;
+        int currRange;
+        int closestRange;
+
+        for (int i = 1; i < surrBlocks.size(); i++){
+            Cell Block = surrBlocks.get(i);
+            Cell closestBlock = surrBlocks.get(closestIdx);
+            if (strat == 1) {
+                closestRange = euclideanDistance(closestBlock.x, closestBlock.y, targetPos.x, targetPos.y);
+                currRange = euclideanDistance(Block.x, Block.y, targetPos.x, targetPos.y);
+                if (currRange < closestRange) {
+                    closestIdx = i;
+                }
+            }
+        }
+        return surrBlocks.get(closestIdx);
     }
 
     private List<List<Cell>> constructFireDirectionLines(int range) {

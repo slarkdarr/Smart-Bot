@@ -23,7 +23,7 @@ public class GameState {
     public MyPlayer myPlayer;
 
     @SerializedName("opponents")
-    public Opponent[] opponents;
+    public Opponent[] opponents; //CHANGED FROM public Opponent[] opponents
 
     @SerializedName("map")
     public Cell[][] map;
