@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/The code.iml" filepath="$PROJECT_DIR$/.idea/The code.iml" />
+      <module fileurl="file://$PROJECT_DIR$/starter-pack/starter-bots/java/java-sample-bot.iml" filepath="$PROJECT_DIR$/starter-pack/starter-bots/java/java-sample-bot.iml" />
       <module fileurl="file://$PROJECT_DIR$/starter-pack/starter-bots/purely-functional-scala/purely-functional-scala.iml" filepath="$PROJECT_DIR$/starter-pack/starter-bots/purely-functional-scala/purely-functional-scala.iml" />
       <module fileurl="file://$PROJECT_DIR$/starter-pack/starter-bots/scala/scala.iml" filepath="$PROJECT_DIR$/starter-pack/starter-bots/scala/scala.iml" />
       <module fileurl="file://$PROJECT_DIR$/starter-pack/starter-bots/java/starter-bots.iml" filepath="$PROJECT_DIR$/starter-pack/starter-bots/java/starter-bots.iml" />

@@ -7,9 +7,11 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="starter-bots" />
+        <module name="java-sample-bot" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="java-sample-bot" target="8" />
       <module name="starter-bots" target="8" />
     </bytecodeTargetLevel>
   </component>
