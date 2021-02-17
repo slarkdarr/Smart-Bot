@@ -17,14 +17,13 @@ public class Bot {
     private MyWorm currentWorm;
     private int currentStrat;
 
-
     public Bot(Random random, GameState gameState) {
         this.random = random;
         this.gameState = gameState;
         this.opponent = gameState.opponents[0];
         this.currentWorm = getCurrentWorm(gameState);
-        if (gameState.currentRound <= 10){
-            this.currentStrat = 2; // All worms goes to the middle of the map in early rounds.
+        if (gameState.currentRound <= 40){
+            this.currentStrat = 1; // All worms goes to the middle of the map in early rounds.
         }
         else {
             this.currentStrat = 2; // Hunt enemies
@@ -41,18 +40,31 @@ public class Bot {
     public Command run() {
 
         Worm enemyWorm = getFirstWormInRange();
-
+        Worm closeEnemyWorm = getFirstObstructedWormInRange(); // Tanpa peduli DIRT sebagai penghalang
         //Combat
+        if (closeEnemyWorm != null){
+            if (currentWorm.id == 3 && currentWorm.snowballs.count > 0) {
+                List<List<Worm>> ListTwoTeamsMembersInVicinity = getTeammatesInRadius(closeEnemyWorm.position, currentWorm.snowballs.freezeRadius);
+                if (currentWorm.snowballs.count > 0 && ListTwoTeamsMembersInVicinity.get(0).size() == 0) {
+                    if ((currentWorm.health <= 50 && closeEnemyWorm.roundsUntilUnfrozen == 0) || ListTwoTeamsMembersInVicinity.get(1).size() > 1 ) {
+                        currentWorm.snowballs.count -= 1;
+                        return new SnowballCommand(closeEnemyWorm.position.x, closeEnemyWorm.position.y);
+                    }
+                }
+            }
+
+            else if (currentWorm.id == 2 && currentWorm.bananaBombs.count > 0) {
+                List<List<Worm>> ListTwoTeamsMembersInVicinity = getTeammatesInRadius(closeEnemyWorm.position, currentWorm.bananaBombs.damageRadius);
+                if (currentWorm.bananaBombs.count > 0 && ListTwoTeamsMembersInVicinity.get(0).size() == 0) {
+                    if (currentWorm.health <= 50 || ListTwoTeamsMembersInVicinity.get(1).size() > 1 ) {
+                        currentWorm.bananaBombs.count -= 1;
+                        return new BananaBombCommand(closeEnemyWorm.position.x, closeEnemyWorm.position.y);
+                    }
+                }
+            }
+        }
         if (enemyWorm != null) {
             Direction direction = resolveDirection(currentWorm.position, enemyWorm.position);
-            if (currentWorm.id == 3 && currentWorm.snowballs.count > 0 && enemyWorm.roundsUntilUnfrozen == 0) {
-                currentWorm.snowballs.count -= 1;
-                return new SnowballCommand(enemyWorm.position.x, enemyWorm.position.y);
-            }
-            else if (currentWorm.id == 2 && currentWorm.bananaBombs.count > 0){
-                currentWorm.bananaBombs.count -= 1;
-                return new BananaBombCommand(enemyWorm.position.x, enemyWorm.position.y);
-            }
             return new ShootCommand(direction);
         }
 
@@ -100,6 +112,51 @@ public class Bot {
 
         return null;
     }
+    private Worm getFirstObstructedWormInRange() {
+
+        Set<String> cells = constructObstructedDirectionLines(currentWorm.weapon.range)
+                .stream()
+                .flatMap(Collection::stream)
+                .map(cell -> String.format("%d_%d", cell.x, cell.y))
+                .collect(Collectors.toSet());
+
+        for (Worm enemyWorm : opponent.worms) {
+            String enemyPosition = String.format("%d_%d", enemyWorm.position.x, enemyWorm.position.y);
+            if (cells.contains(enemyPosition) && enemyWorm.health > 0) {
+                return enemyWorm;
+            }
+        }
+
+        return null;
+    }
+
+    private List<List<Worm>> getTeammatesInRadius (Position centerArea, int radius) {
+        List<Worm> ListAlliesInRadius = new ArrayList<Worm>();
+        List<Worm> ListEnemiesInRadius = new ArrayList<Worm>();
+        List<List<Worm>> ListTeamsMembersInRadius = new ArrayList<List<Worm>>();
+        for (int i = 0; i < 3; i ++) {
+            Worm Ally = gameState.myPlayer.worms[i];
+            if (Ally.health > 0 && euclideanDistance(Ally.position.x, Ally.position.y, centerArea.x, centerArea.y) < radius) {
+                ListAlliesInRadius.add(Ally);
+            }
+            Worm Enemy = opponent.worms[i];
+            if (Enemy.health > 0 && euclideanDistance(Enemy.position.x, Enemy.position.y, centerArea.x, centerArea.y) < radius) {
+                if (Enemy.roundsUntilUnfrozen == 0) {
+                    ListEnemiesInRadius.add(Enemy);
+                }
+                // Tambahkan kalkulasi damage/dirt untuk banana bomb Agent
+                else if (currentWorm.id == 2) {
+                    ListEnemiesInRadius.add(Enemy);
+                }
+            }
+
+        }
+        ListTeamsMembersInRadius.add(ListAlliesInRadius);
+        ListTeamsMembersInRadius.add(ListEnemiesInRadius);
+        return  ListTeamsMembersInRadius;
+    }
+
+
 
     private Position getTargetPos(int strat) {
         Position Middle = new Position();
@@ -181,6 +238,35 @@ public class Bot {
         }
         return surrBlocks.get(closestIdx);
     }
+
+    private List<List<Cell>> constructObstructedDirectionLines(int range) {
+        List<List<Cell>> directionLines = new ArrayList<>();
+        for (Direction direction : Direction.values()) {
+            List<Cell> directionLine = new ArrayList<>();
+            for (int directionMultiplier = 1; directionMultiplier <= range; directionMultiplier++) {
+
+                int coordinateX = currentWorm.position.x + (directionMultiplier * direction.x);
+                int coordinateY = currentWorm.position.y + (directionMultiplier * direction.y);
+
+                if (!isValidCoordinate(coordinateX, coordinateY)) {
+                    break;
+                }
+
+                if (euclideanDistance(currentWorm.position.x, currentWorm.position.y, coordinateX, coordinateY) > range) {
+                    break;
+                }
+
+                Cell cell = gameState.map[coordinateY][coordinateX];
+                directionLine.add(cell);
+            }
+            directionLines.add(directionLine);
+        }
+
+        return directionLines;
+    }
+
+
+
 
     private List<List<Cell>> constructFireDirectionLines(int range) {
         List<List<Cell>> directionLines = new ArrayList<>();
