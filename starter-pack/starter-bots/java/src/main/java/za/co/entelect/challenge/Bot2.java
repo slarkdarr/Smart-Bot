@@ -244,29 +244,148 @@ public class Bot2 {
             {
                 if (euclideanDistance(position.x, position.y, i.position.x, i.position.y) <= 4)
                 {
+                    float g = getGradientAToB(position.x, position.y, i.position.x, i.position.y);
+                    Direction danger = getDirectionAToB(position.x, position.y, i.position.x, i.position.y);
                     if (position.x != i.position.x && position.y != i.position.y)
                     {
-                        float g = getGradientAToB(position.x, position.y, i.position.x, i.position.y)
-                        if (g == 1 || g == -1)
+                        if ((g == 1 || g == -1) && LineOfSight(position.x, position.y, danger, 4))
                         {
-                            threats.add(getDirectionAToB(position.x, position.y, i.position.x, i.position.y));
+                            threats.add(danger);
                         }
                     } else {
-
-                        threats.add(getDirectionAToB(position.x, position.y, i.position.x, i.position.y));
+                        if (LineOfSight(position.x, position.y, danger, 4))
+                        {
+                            threats.add(danger);
+                        }
                     }
                 }
             }
+
+            int[] axis = new int[] { 1, 1, 1, 1 }; // N, NE, E, SE
+
+            for (Direction d: threats)
+            {
+                if ((d == Direction.SE || d == Direction.NW) && axis[2] == 1)
+                { axis[3] = 0; }
+
+                if ((d == Direction.E || d == Direction.W) && axis[2] == 1)
+                { axis[2] = 0; }
+
+                if ((d == Direction.NE || d == Direction.SW) && axis[1] == 1)
+                { axis[1] = 0; }
+
+                if ((d == Direction.N || d == Direction.S) && axis[0] == 1)
+                { axis[0] = 0; }
+            }
+
+            Direction escape = Direction.N;
+            Position dangerPos;
+            Cell targetEscape;
+            boolean foundEscape = false;
+            int a = 0;
+
+            while (a < 4 && !foundEscape)
+            {
+                // Test original axis
+                dangerPos = position;
+                dangerPos.x += escape.x;
+                dangerPos.y += escape.y;
+                targetEscape = gameState.map[dangerPos.x][dangerPos.y];
+                if (targetEscape.type == CellType.AIR)
+                {
+                    foundEscape = true;
+                    commandParams[2].x = dangerPos.x;
+                    commandParams[2].y = dangerPos.y;
+                } else {
+                    // Test inverse of original axis (too lazy to do fancy logic)
+                    dangerPos = position;
+                    escape = Rotate180(escape);
+                    dangerPos.x += escape.x;
+                    dangerPos.y += escape.y;
+                    targetEscape = gameState.map[dangerPos.x][dangerPos.y];
+                    if (targetEscape.type == CellType.AIR)
+                    {
+                        foundEscape = true;
+                        commandParams[2].x = dangerPos.x;
+                        commandParams[2].y = dangerPos.y;
+                    } else {
+                        a++;
+                        escape = Rotate180(escape);
+                        escape = rotateCW(escape);
+                    }
+                }
+            }
+
+            if (threats.size() == 0)
+            {
+                weights[2] = -1;
+            } else if (currentWorm.health < 10)
+            {
+                weights[2] = 8 + 40;
+                // If cornered and pinned by lava
+                while (!foundEscape)
+                {
+                    dangerPos = position;
+                    dangerPos.x += escape.x;
+                    dangerPos.y += escape.y;
+                    targetEscape = gameState.map[dangerPos.x][dangerPos.y];
+                    if (targetEscape.type == CellType.LAVA || targetEscape.type == CellType.AIR)
+                    {
+                        foundEscape = true;
+                        commandParams[2].x = dangerPos.x;
+                        commandParams[2].y = dangerPos.y;
+                    }
+                    escape = rotateCW(escape);
+                }
+            } else {
+                weights[2] = 8;
+            }
+
         }
 
         private void constructShoot()
         {
+            List<Worm> targets = new ArrayList<Worm>();
+            int lowestHealth = 200;
+            int lowestHealthIndex = 4;
+            Direction lowestHealthDirection = Direction.N;
 
+            for(int i = 0; i < 3; i++)
+            {
+                int distance = euclideanDistance(position.x, position.y, opponent.worms[i].position.x, opponent.worms[i].position.y);
+                Direction aim = getDirectionAToB(position.x, position.y, opponent.worms[i].position.x, opponent.worms[i].position.y);
+
+                if (distance <= 4 && LineOfSight(position, aim, opponent.worms[i].position))
+                {
+                    targets.add(opponent.worms[i]);
+                    if (opponent.worms[i].health < lowestHealth)
+                    {
+                        lowestHealth = opponent.worms[i].health;
+                        lowestHealthDirection = aim;
+                        lowestHealthIndex = i;
+                    }
+                }
+            }
+
+            if (targets.size() != 0)
+            {
+                shootParams = lowestHealthDirection;
+                if (lowestHealthIndex != 4)
+                {
+                    weights[3] = (opponent.worms[lowestHealthIndex].health <= 8) ? 2 * 8 + 40 : 2 * 8;
+                }
+            } else {
+                weights[3] = -1;
+            }
         }
 
         private void constructDig()
         {
-
+            if (weights[4] != -1)
+            {
+                commandParams[4].x = commandParams[0].x;
+                commandParams[4].y = commandParams[0].y;
+            }
         }
 
         private void constructBananaBomb()
@@ -363,6 +482,25 @@ public class Bot2 {
         return true;
     }
 
+    private boolean LineOfSight(Position shooter, Direction aim, Position target)
+    {
+        int x = shooter.x;
+        int y = shooter.y;
+
+        while (x != target.x && y != target.y)
+        {
+            x += aim.x;
+            y += aim.y;
+
+            if (gameState.map[x][y].type == CellType.DIRT || gameState.map[x][y].type == CellType.DEEP_SPACE)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private Direction rotateCCW(Direction input)
     {
         switch(input){
@@ -383,6 +521,53 @@ public class Bot2 {
             case NE:
                 return Direction.N;
         }
+        return Direction.S;
+    }
+
+    private Direction rotateCW(Direction input)
+    {
+        switch(input){
+            case N:
+                return Direction.NE;
+            case NW:
+                return Direction.N;
+            case W:
+                return Direction.NW;
+            case SW:
+                return Direction.W;
+            case S:
+                return Direction.SW;
+            case SE:
+                return Direction.S;
+            case E:
+                return Direction.SE;
+            case NE:
+                return Direction.E;
+        }
+        return Direction.N;
+    }
+
+    private Direction Rotate180(Direction input)
+    {
+        switch(input){
+            case N:
+                return Direction.S;
+            case NW:
+                return Direction.SE;
+            case W:
+                return Direction.E;
+            case SW:
+                return Direction.NE;
+            case S:
+                return Direction.N;
+            case SE:
+                return Direction.NW;
+            case E:
+                return Direction.W;
+            case NE:
+                return Direction.SW;
+        }
+        return Direction.N;
     }
 
 }
