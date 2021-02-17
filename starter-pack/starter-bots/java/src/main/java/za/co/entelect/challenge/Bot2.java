@@ -15,14 +15,14 @@ public class Bot2 {
 
     private Random random;
     private GameState gameState;
-    private Opponent opponents[];
+    private Opponent opponent;
     private MyWorm currentWorm;
 
     public Bot2(Random random, GameState gameState)
     {
         this.random = random;
         this.gameState = gameState;
-        this.opponents = gameState.opponents;
+        this.opponent = gameState.opponents[0];
         this.currentWorm = getCurrentWorm(gameState);
     }
 
@@ -237,10 +237,26 @@ public class Bot2 {
             }
         }
 
-
         private void constructEvade()
         {
+            List<Direction> threats = new ArrayList<Direction>();
+            for (Worm i: opponent.worms)
+            {
+                if (euclideanDistance(position.x, position.y, i.position.x, i.position.y) <= 4)
+                {
+                    if (position.x != i.position.x && position.y != i.position.y)
+                    {
+                        float g = getGradientAToB(position.x, position.y, i.position.x, i.position.y)
+                        if (g == 1 || g == -1)
+                        {
+                            threats.add(getDirectionAToB(position.x, position.y, i.position.x, i.position.y));
+                        }
+                    } else {
 
+                        threats.add(getDirectionAToB(position.x, position.y, i.position.x, i.position.y));
+                    }
+                }
+            }
         }
 
         private void constructShoot()
@@ -328,6 +344,23 @@ public class Bot2 {
         }
 
         return max;
+    }
+
+    // Range > 0
+    private boolean LineOfSight(int x, int y, Direction aim, int range)
+    {
+        for (int i = 0; i < range; i++)
+        {
+            x += aim.x;
+            y += aim.y;
+
+            if (gameState.map[x][y].type == CellType.DIRT || gameState.map[x][y].type == CellType.DEEP_SPACE)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private Direction rotateCCW(Direction input)
