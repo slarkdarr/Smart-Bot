@@ -26,27 +26,81 @@ public class Bot2 {
 
     public Command run()
     {
-
+        MoveSet moveset = new MoveSet();
+        return moveset.getCommand();
     }
 
     /* Contains all possible moves */
     /* Responsible for choosing current best action */
-    class MoveSet {
+    private class MoveSet {
+        private Command command;
+
         /*
         * POSSIBLE MOVES    Weight                              Description
-        * MoveTo            5                                   Towards center or powerup (nearest)
+        * MoveTo*           5                                   Towards center or powerup (nearest)
         * MoveToPowerUp     25                                  Towards powerup
-        * Evade             2 * 8 (+40 if lethal)               Always away from firing line
+        * Evade             2 * 8 - 1 (+40 if lethal)           Always away from firing line
         * Shoot             2 * 8 (+1 per enemy health delta)   Always targeted at closest enemy
         * Dig               7                                   Always when MoveTo is obstructed
-        * Banana Bomb       17                                  Always towards enemy, can invoke select
-        * Snowball          17                                  Always towards enemy, can invoke select
-        * DoNothing         0                                   Selam
+        * Banana Bomb*      14 * n                              Always towards enemy, can invoke select, ignores line of sight
+        * Snowball*         17                                  Always towards enemy, can invoke select, needs line of sight
+        * DoNothing         0                                   Chill
+        *
+        * MoveTo will try to maintain a distance of 3-2 from center point.
+        * n is number of enemies, 14 is average expected damage
+        * Snowball is given a LOS restriction so that at least one worm is guaranteed to be able to follow up with a shot
+        * invalid moves have weight < 0
         * */
 
         public MoveSet()
         {
+            ActionPlanner strategy = new ActionPlanner();
+            selectCommand(strategy);
+        }
 
+        public Command getCommand()
+        {
+            return command;
+        }
+
+        private void selectCommand(ActionPlanner strategy)
+        {
+            int commandWeights[] = strategy.getWeights();
+            int commandID = indexOfMax(commandWeights);
+
+            if (commandWeights[commandID] < 0)
+            {
+                command = new DoNothingCommand();
+                return;
+            }
+
+            Position target = strategy.getCommandParams(commandID);
+            Direction aim = strategy.getShootParams();
+            switch(commandID)
+            {
+                case 0:
+                case 1:
+                case 2:
+                    command = new MoveCommand(target.x, target.y);
+                    break;
+                case 3:
+                    command = new ShootCommand(aim);
+                    break;
+                case 4:
+                    command = new DigCommand(target.x, target.y);
+                    break;
+                case 5:
+                    command = new BananaBombCommand(target.x, target.y);
+                    break;
+                case 6:
+                    command = new SnowballCommand(target.x, target.y);
+                    break;
+                default:
+                    command = new DoNothingCommand();
+                    break;
+            }
+
+            return;
         }
 
     }
@@ -55,21 +109,31 @@ public class Bot2 {
     /* Responsible for construction commands */
     class ActionPlanner {
 
+        /*ACTION            ID
+        * MoveTo            0
+        * MoveToPowerUp     1
+        * Evade             2
+        * Shoot             3
+        * Dig               4
+        * BananaBomb        5
+        * SnowBall          6
+        * */
+
         // Weights of actions are stored in weights attribute
         private int weights[];
 
-        // Action parameters are stored in <command>Strat attribute
-        public Position moveStrat;
-        public Position evadeStrat;
-        public Direction shootStrat;
-        public Position digStrat;
-        public Position bananaBombStrat;
-        public Position snowBallStrat;
+        // Action parameters are stored in commandParams and shootParams
+        private Position commandParams[];
+        private Direction shootParams;
+
 
         // On construct, construct all action data
         public ActionPlanner()
         {
+            this.weights = new int[7];
+            this.commandParams = new Position[7];
             constructMoveTo();
+            constructMoveToPowerUp();
             constructEvade();
             constructShoot();
             constructDig();
@@ -82,11 +146,28 @@ public class Bot2 {
             return this.weights;
         }
 
+        public Position getCommandParams(int id)
+        {
+            return commandParams[id];
+        }
+
+        public Direction getShootParams()
+        {
+            return shootParams;
+        }
+
+
         // construct action data
         public Position constructMoveTo()
         {
 
         }
+
+        public Position constructMoveToPowerUp()
+        {
+
+        }
+
 
         public Position constructEvade()
         {
@@ -112,7 +193,6 @@ public class Bot2 {
         {
 
         }
-
     }
 
     private int euclideanDistance(int aX, int aY, int bX, int bY) {
@@ -125,6 +205,21 @@ public class Bot2 {
                 .findFirst()
                 .get();
     }
+
+    private int indexOfMax(int[] arr)
+    {
+        int max  = 0;
+        for (int i = 0; i < arr.length; i++)
+        {
+            if (arr[i] > arr[max])
+            {
+                max = i;
+            }
+        }
+
+        return max;
+    }
+
 
 }
 
