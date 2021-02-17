@@ -5,9 +5,11 @@ import za.co.entelect.challenge.command.*;
 import za.co.entelect.challenge.entities.*;
 import za.co.entelect.challenge.enums.CellType;
 import za.co.entelect.challenge.enums.Direction;
+import za.co.entelect.challenge.enums.PowerUpType;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.lang.system;
 
 public class Bot2 {
 
@@ -34,6 +36,7 @@ public class Bot2 {
     /* Responsible for choosing current best action */
     private class MoveSet {
         private Command command;
+        private ActionPlanner strategy;
 
         /*
         * POSSIBLE MOVES    Weight                              Description
@@ -54,7 +57,7 @@ public class Bot2 {
 
         public MoveSet()
         {
-            ActionPlanner strategy = new ActionPlanner();
+            strategy = new ActionPlanner();
             selectCommand(strategy);
         }
 
@@ -98,15 +101,16 @@ public class Bot2 {
                     }
                     break;
                 case 6: // Snowball Command
-                    if (currentWorm.id != 2)
+                    if (currentWorm.id != 3)
                     {
-                        command = new SelectCommand(2, 6, target.x, target.y);
+                        command = new SelectCommand(3, 6, target.x, target.y);
                     } else {
                         command = new SnowballCommand(target.x, target.y);
                     }
                     break;
                 default: // Logical error somewhere, fix later
                     command = new DoNothingCommand();
+                    System.out.console.log("Logical error in class: MoveSet");
                     break;
             }
             return;
@@ -117,6 +121,13 @@ public class Bot2 {
     /* Contains all possible actions and their values */
     /* Responsible for construction commands */
     class ActionPlanner {
+
+        /*POI               ID
+        * Center            0
+        * PowerUp 1         1
+        * PowerUp 2         2
+        * */
+        private int distancesToPOI[] = new int[3];
 
         /*ACTION            ID
         * MoveTo            0
@@ -135,12 +146,20 @@ public class Bot2 {
         private Position commandParams[];
         private Direction shootParams;
 
+        private Position position;
 
         // On construct, construct all action data
         public ActionPlanner()
         {
             this.weights = new int[7];
             this.commandParams = new Position[7];
+
+            this.position = currentWorm.position;
+
+            this.distancesToPOI[0] = euclideanDistance(position.x, position.y, 16, 16);
+            this.distancesToPOI[1] = euclideanDistance(position.x, position.y, 14, 15);
+            this.distancesToPOI[2] = euclideanDistance(position.x, position.y, 15, 14);
+
             constructMoveTo();
             constructMoveToPowerUp();
             constructEvade();
@@ -154,12 +173,10 @@ public class Bot2 {
         {
             return this.weights;
         }
-
         public Position getCommandParams(int id)
         {
             return commandParams[id];
         }
-
         public Direction getShootParams()
         {
             return shootParams;
@@ -167,38 +184,81 @@ public class Bot2 {
 
 
         // construct action data
-        public Position constructMoveTo()
+        private void constructMoveTo()
+        {
+            int target = indexOfMin(distancesToPOI);
+            Position dest = new Position();
+            switch(target)
+            {
+                case 0:
+                    dest.x = 16; dest.y = 16;
+                    break;
+                case 1:
+                    dest.x = 14; dest.y = 15;
+                    break;
+                case 2:
+                    dest.x = 15; dest.y = 14;
+                    break;
+            }
+
+            Direction d = getDirectionAToB(dest.x, dest.y, position.x, position.y);
+            Cell movetoCell = gameState.map[position.x+d.x][position.y+d.y];
+
+            // Rotate until unoccupied cell is found
+            while (movetoCell.occupier.playerId == gameState.myPlayer.id) // If occupied by enemy, evade or shoot will be prioritized
+            {
+                d = rotateCCW(d);
+                movetoCell = gameState.map[position.x+d.x][position.y+d.y];
+            }
+
+            if (movetoCell.type == CellType.AIR)
+            {
+                commandParams[0].x = movetoCell.x;
+                commandParams[0].y = movetoCell.y;
+                weights[0] = 5;
+                weights[4] = -1;
+            } else if (movetoCell.type == CellType.DIRT)
+            {
+                weights[4] = 7;
+            }
+        }
+
+        private void constructMoveToPowerUp()
+        {
+            Cell movetoCell = gameState.map[commandParams[0].x][commandParams[0].y];
+
+            if (movetoCell.powerUp.type == PowerUpType.HEALTH_PACK)
+            {
+                commandParams[1].x = commandParams[0].x;
+                commandParams[1].y = commandParams[0].y;
+                weights[1] = 25;
+            } else {
+                weights[1] = -1;
+            }
+        }
+
+
+        private void constructEvade()
         {
 
         }
 
-        public Position constructMoveToPowerUp()
+        private void constructShoot()
         {
 
         }
 
-
-        public Position constructEvade()
+        private void constructDig()
         {
 
         }
 
-        public Direction constructShoot()
+        private void constructBananaBomb()
         {
 
         }
 
-        public Position constructDig()
-        {
-
-        }
-
-        public Position constructBananaBomb()
-        {
-
-        }
-
-        public Position constructSnowBall()
+        private void constructSnowBall()
         {
 
         }
@@ -215,6 +275,33 @@ public class Bot2 {
                 .get();
     }
 
+    private Direction getDirectionAToB(int xA, int yA, int xB, int yB)
+    {
+        if (xA == xB && yA != yB)
+        {
+            if (yA < yB)    { return Direction.N; }
+            else            { return Direction.S; }
+        } else
+        if (xA != xB && yA == yB)
+        {
+            if (xA < xB)    { return Direction.W; }
+            else            { return Direction.E; }
+        } else {
+            float gDir = getGradientAToB(xA, yA, xB, yB);
+            Direction result;
+
+            if (gDir > 0) { result = (xA < xB) ? Direction.SE : Direction.NW; } else
+            if (gDir < 0) { result = (xA < xB) ? Direction.NE : Direction.SW; }
+        }
+
+        return Direction.S;
+    }
+
+    private float getGradientAToB(int x1, int y1, int x2, int y2)
+    {
+        return (y2 - y1) / (x2 - x1);
+    }
+
     private int indexOfMax(int[] arr)
     {
         int max  = 0;
@@ -228,6 +315,43 @@ public class Bot2 {
 
         return max;
     }
+
+    private int indexOfMin(int[] arr)
+    {
+        int max  = 0;
+        for (int i = 0; i < arr.length; i++)
+        {
+            if (arr[i] < arr[max])
+            {
+                max = i;
+            }
+        }
+
+        return max;
+    }
+
+    private Direction rotateCCW(Direction input)
+    {
+        switch(input){
+            case N:
+                return Direction.NW;
+            case NW:
+                return Direction.W;
+            case W:
+                return Direction.SW;
+            case SW:
+                return Direction.S;
+            case S:
+                return Direction.SE;
+            case SE:
+                return Direction.E;
+            case E:
+                return Direction.NE;
+            case NE:
+                return Direction.N;
+        }
+    }
+
 }
 
 

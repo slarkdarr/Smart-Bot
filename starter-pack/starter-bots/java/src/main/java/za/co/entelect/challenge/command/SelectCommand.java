@@ -18,15 +18,12 @@ public class SelectCommand implements Command {
     {
         switch(followUpCommand)
         {
-            case 4:
-                return String.format("select %d;banana %d %d", target, x, y);
-                break;
             case 5:
+                return String.format("select %d;banana %d %d", target, x, y);
+            case 6:
                 return String.format("select %d;snowball %d %d", target, x, y);
-                break;
             default:
                 return String.format("select %d;", target);
-                break;
         }
     }
 }
