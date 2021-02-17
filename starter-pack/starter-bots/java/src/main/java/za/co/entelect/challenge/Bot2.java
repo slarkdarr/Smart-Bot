@@ -78,28 +78,37 @@ public class Bot2 {
             Direction aim = strategy.getShootParams();
             switch(commandID)
             {
-                case 0:
-                case 1:
-                case 2:
+                case 0: // MoveTo
+                case 1: // MoveToPowerUp
+                case 2: // Evade
                     command = new MoveCommand(target.x, target.y);
                     break;
-                case 3:
+                case 3: // Shoot
                     command = new ShootCommand(aim);
                     break;
-                case 4:
+                case 4: // Dig
                     command = new DigCommand(target.x, target.y);
                     break;
-                case 5:
-                    command = new BananaBombCommand(target.x, target.y);
+                case 5: // BananaBomb
+                    if (currentWorm.id != 2)
+                    {
+                        command = new SelectCommand(2, 5,target.x, target.y);
+                    } else {
+                        command = new BananaBombCommand(target.x, target.y);
+                    }
                     break;
-                case 6:
-                    command = new SnowballCommand(target.x, target.y);
+                case 6: // Snowball Command
+                    if (currentWorm.id != 2)
+                    {
+                        command = new SelectCommand(2, 6, target.x, target.y);
+                    } else {
+                        command = new SnowballCommand(target.x, target.y);
+                    }
                     break;
-                default:
+                default: // Logical error somewhere, fix later
                     command = new DoNothingCommand();
                     break;
             }
-
             return;
         }
 
@@ -219,8 +228,6 @@ public class Bot2 {
 
         return max;
     }
-
-
 }
 
 
