@@ -205,11 +205,17 @@ public class Bot2 {
             Cell movetoCell = gameState.map[position.x+d.x][position.y+d.y];
 
             // Rotate until unoccupied cell is found
-            while (gameState.map[position.x+d.x][position.y+d.y].occupier.playerId == gameState.myPlayer.id) // If occupied by enemy, evade or shoot will be prioritized
+            if (movetoCell.occupier.playerId != null)
             {
                 d = rotateCCW(d);
                 movetoCell = gameState.map[position.x+d.x][position.y+d.y];
             }
+
+//            while (movetoCell.occupier.playerId == gameState.myPlayer.id) // If occupied by enemy, evade or shoot will be prioritized
+//            {
+//                d = rotateCCW(d);
+//                movetoCell = gameState.map[position.x+d.x][position.y+d.y];
+//            }
 
             if (movetoCell.type == CellType.AIR)
             {
@@ -227,13 +233,16 @@ public class Bot2 {
         {
             Cell movetoCell = gameState.map[commandParams[0].x][commandParams[0].y];
 
-            if (movetoCell.powerUp.type == PowerUpType.HEALTH_PACK)
+            if (movetoCell.powerUp != null)
             {
-                commandParams[1].x = commandParams[0].x;
-                commandParams[1].y = commandParams[0].y;
-                weights[1] = 25;
-            } else {
-                weights[1] = -1;
+                if (movetoCell.powerUp.type == PowerUpType.HEALTH_PACK)
+                {
+                    commandParams[1].x = commandParams[0].x;
+                    commandParams[1].y = commandParams[0].y;
+                    weights[1] = 25;
+                } else {
+                    weights[1] = -1;
+                }
             }
         }
 
@@ -385,6 +394,23 @@ public class Bot2 {
             {
                 commandParams[4].x = commandParams[0].x;
                 commandParams[4].y = commandParams[0].y;
+            } else {
+                Direction nearby = Direction.N;
+                Cell digThis = gameState.map[position.x + nearby.x][position.y + nearby.y];
+
+
+                while (digThis.type != CellType.DIRT)
+                {
+                    nearby = rotateCCW(nearby);
+                    digThis = gameState.map[position.x + nearby.x][position.y + nearby.y];
+                }
+
+                if (digThis.type == CellType.DIRT)
+                {
+                    commandParams[4].x = digThis.x;
+                    commandParams[4].y = digThis.y;
+                    weights[4] = 7;
+                }
             }
         }
 
