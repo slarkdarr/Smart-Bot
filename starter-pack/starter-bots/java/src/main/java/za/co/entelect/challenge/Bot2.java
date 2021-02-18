@@ -229,7 +229,7 @@ public class Bot2 {
             }
 
             System.out.println(String.format("Moving to direction %d %d", d.x, d.y));
-            
+
 //            while (movetoCell.occupier.playerId == gameState.myPlayer.id) // If occupied by enemy, evade or shoot will be prioritized
 //            {
 //                d = rotateCCW(d);
@@ -238,15 +238,21 @@ public class Bot2 {
 
             if (movetoCell.type == CellType.AIR)
             {
+                System.out.println(String.format("Found air cell %d %d near position %d %d at direction  ", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
                 commandParams[0].x = movetoCell.x;
                 commandParams[0].y = movetoCell.y;
                 weights[0] = 5;
                 weights[4] = -1;
             } else if (movetoCell.type == CellType.DIRT)
             {
+                System.out.println(String.format("Found dirt cell %d %d near position %d %d at direction  ", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
                 commandParams[0].x = movetoCell.x;
                 commandParams[0].y = movetoCell.y;
+                weights[0] = -1;
                 weights[4] = 7;
+            } else if (target == 0)
+            {
+                weights[0] = -1;
             }
         }
 
@@ -415,7 +421,7 @@ public class Bot2 {
             {
                 commandParams[4].x = commandParams[0].x;
                 commandParams[4].y = commandParams[0].y;
-            } else {
+            } else if (weights[0] == -1){
                 Direction nearby = Direction.N;
                 Cell digThis = gameState.map[position.x + nearby.x][position.y + nearby.y];
 
@@ -428,10 +434,13 @@ public class Bot2 {
 
                 if (digThis.type == CellType.DIRT)
                 {
+                    System.out.println(String.format("Found dirt cell %d %d near position %d %d at direction  ", digThis.x, digThis.y, position.x, position.y, nearby.x, nearby.y));
                     commandParams[4].x = digThis.x;
                     commandParams[4].y = digThis.y;
                     weights[4] = 7;
                 }
+            } else {
+                weights[4] = -1;
             }
         }
 
