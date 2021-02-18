@@ -1,6 +1,5 @@
 package za.co.entelect.challenge;
 
-import javafx.geometry.Pos;
 import za.co.entelect.challenge.command.*;
 import za.co.entelect.challenge.entities.*;
 import za.co.entelect.challenge.enums.CellType;
@@ -16,6 +15,7 @@ public class Bot {
     private GameState gameState;
     private Opponent opponent;
     private MyWorm currentWorm;
+    private int remainingSelect;
     private int currentStrat;
     private int snowballRadius;
     private int snowballRange;
@@ -29,11 +29,12 @@ public class Bot {
         this.gameState = gameState;
         this.opponent = gameState.opponents[0];
         this.currentWorm = getCurrentWorm(gameState);
+        this.remainingSelect = gameState.myPlayer.remainingWormsSelection;
         this.snowballRadius = getSnowBallRadius(gameState);
         this.snowballRange = getSnowballRange(gameState);
         this.snowballCount = getSnowballCount(gameState);
         this.bananaBombRadius = getBananaBombRadius(gameState);
-        this.bananaBombRange = getBananaBombRadius(gameState);
+        this.bananaBombRange = getBananaBombRange(gameState);
         this.bananaBombCount = getBananaBombCount(gameState);
         if (gameState.currentRound <= 40){
             this.currentStrat = 2; // All worms goes to the middle of the map in early rounds.
@@ -84,14 +85,15 @@ public class Bot {
 
         //Check snowball
         MyWorm AllyTech = gameState.myPlayer.worms[2];
-        if (AllyTech.health > 0 && AllyTech.snowballs.count > 0) {
-            Position SBTarget = IdealSnowballTarget();
+        if (AllyTech.health > 0 && snowballCount > 0) {
+            Position SBTarget = IdealThrowTarget(3);
             if (SnowballScore(SBTarget) > 0) {
-                if (currentWorm.id != 3) {
-                    return new SelectCommand(3, 6, SBTarget.x, SBTarget.y);
-                }
-                else {
+                if (currentWorm.id == 3) {
                     return new SnowballCommand(SBTarget.x, SBTarget.y);
+
+                }
+                else if (gameState.myPlayer.remainingWormsSelection > 0){
+                    return new SelectCommand(3, 6, SBTarget.x, SBTarget.y);
                 }
             }
 //                List<List<Worm>> ListTwoTeamsMembersInVicinity = getTeammatesInRadius(closeEnemyWorm.position, currentWorm.snowballs.freezeRadius);
@@ -103,16 +105,28 @@ public class Bot {
 //                }
         }
         //Combat
-        if (closeEnemyWorm != null) {
-            if (currentWorm.id == 2 && currentWorm.health > 0 && bananaBombCount > 0) {
-                List<List<Worm>> ListTwoTeamsMembersInVicinity = getTeammatesInRadius(closeEnemyWorm.position, getBananaBombRadius(gameState), 2);
-                if (bananaBombCount > 0 && ListTwoTeamsMembersInVicinity.get(0).size() == 0) {
-                    if (currentWorm.health <= 60 || ListTwoTeamsMembersInVicinity.get(1).size() > 1 ) {
-                        return new BananaBombCommand(closeEnemyWorm.position.x, closeEnemyWorm.position.y);
-                    }
+        MyWorm AllyAgent = gameState.myPlayer.worms[1];
+        if (AllyAgent.health > 0 && bananaBombCount > 0) {
+            Position SBTarget = IdealThrowTarget(2);
+            if (BananaBombScore(SBTarget) > 0) {
+                if (currentWorm.id == 2) {
+                    return new BananaBombCommand(SBTarget.x, SBTarget.y);
+                } else if (gameState.myPlayer.remainingWormsSelection > 0){
+                    return new SelectCommand(2, 5, SBTarget.x, SBTarget.y);
                 }
             }
+//            if (closeEnemyWorm != null) {
+//                if (currentWorm.id == 2 && currentWorm.health > 0 && bananaBombCount > 0) {
+//                    List<List<Worm>> ListTwoTeamsMembersInVicinity = getTeammatesInRadius(closeEnemyWorm.position, getBananaBombRadius(gameState), 2);
+//                    if (bananaBombCount > 0 && ListTwoTeamsMembersInVicinity.get(0).size() == 0) {
+//                        if (currentWorm.health <= 60 || ListTwoTeamsMembersInVicinity.get(1).size() > 1 ) {
+//                            return new BananaBombCommand(closeEnemyWorm.position.x, closeEnemyWorm.position.y);
+//                        }
+//                    }
+//                }
+//            }
         }
+
         if (enemyWorm != null) {
             Direction direction = resolveDirection(currentWorm.position, enemyWorm.position);
             return new ShootCommand(direction);
@@ -202,7 +216,7 @@ public class Bot {
                 if (ID == 3 && Enemy.roundsUntilUnfrozen == 0 && AllyInShootLine(Enemy.position)) {
                     ListEnemiesInRadius.add(Enemy);
                 }
-                // Untuk Agent masih belum.
+                // Agent throw
                 else if (ID == 2) {
                     ListEnemiesInRadius.add(Enemy);
                 }
@@ -280,19 +294,38 @@ public class Bot {
     }
 
     // Mencari posisi target snowball yang paling efektif.
-    private Position IdealSnowballTarget(){
-        MyWorm AllyTech = gameState.myPlayer.worms[2];
+    private Position IdealThrowTarget(int WormID){
+        //ASUMSI WormID selalu 2 atau 3
+        MyWorm AllyTech = gameState.myPlayer.worms[WormID-1];
         Position AllyTechPos = AllyTech.position;
-        int BestScore = -999;
         Position BestScorePos = new Position();
-        for (int i = -snowballRange; i <= snowballRange; i++ ){
-            for (int j = -snowballRange; j <= snowballRange; j++ ) {
+
+        int BestScore = -999;
+        int range;
+        int currentScore;
+
+        if (WormID == 2){
+            range = bananaBombRange;
+
+        }
+        else { // Worm ID == 3
+            range = snowballRange;
+        }
+
+        for (int i = -range; i <= range; i++ ){
+            for (int j = -range; j <= range; j++ ) {
                 if (i != 0 || j != 0) {
                     Position currentCellPos = new Position();
                     currentCellPos.x = AllyTechPos.x + i;
                     currentCellPos.y = AllyTechPos.y + j;
-                    if (euclideanDistance(AllyTechPos.x, AllyTechPos.y, currentCellPos.x, currentCellPos.y) <= snowballRange) {
-                        int currentScore = SnowballScore(currentCellPos);
+
+                    if (euclideanDistance(AllyTechPos.x, AllyTechPos.y, currentCellPos.x, currentCellPos.y) <= range) {
+                        if (WormID == 2) {
+                            currentScore = BananaBombScore(currentCellPos);
+                        }
+                        else {
+                            currentScore = SnowballScore(currentCellPos);
+                        }
                         if (BestScore < currentScore) {
                             BestScore = currentScore;
                             BestScorePos.x = currentCellPos.x;
@@ -304,6 +337,32 @@ public class Bot {
         }
         return BestScorePos;
     }
+    private int DirtInRadius(Position centralArea, int radius){
+        int DirtCounter = 0;
+        for (int i = -radius; i <= radius; i++ ) {
+            for (int j = -radius; j <= radius; j++) {
+                if (euclideanDistance(centralArea.x, centralArea.y, centralArea.x+1, centralArea.y+1) <= radius) {
+                    if (gameState.map[centralArea.y+j][centralArea.x+i].type == CellType.DIRT) {
+                        DirtCounter++;
+                    }
+                }
+            }
+        }
+        return DirtCounter;
+    }
+    // Pengukur score yang didapat dari melempar banana bomb.
+    private int BananaBombScore(Position centralArea){
+        List<List<Worm>> ListTeamWorms = getTeammatesInRadius(centralArea, bananaBombRadius, 2);
+        int nAllies = ListTeamWorms.get(0).size();
+        int nEnemies = ListTeamWorms.get(1).size();
+        if (nEnemies > 0) {
+            for (int i = 0; i < ListTeamWorms.get(1).size(); i++) {
+                return 14 * nEnemies - 14 * nAllies + DirtInRadius(centralArea,bananaBombRadius) * 7;
+            }
+        }
+        return -999;
+    }
+
     // Pengukur score yang didapat dari melempar snowball.
     private int SnowballScore(Position centralArea) {
         List<List<Worm>> ListTeamWorms = getTeammatesInRadius(centralArea, snowballRadius, 3);
@@ -317,7 +376,6 @@ public class Bot {
             }
         }
         return 0;
-
     }
 
     // Pencari cell tujuan move worm untuk mencapai targetPos
@@ -487,7 +545,7 @@ public class Bot {
                 for (int i = 0 ; i <= gradComp[0]; i++) {
                     if (gradComp[1] >= 0){
                         for (int j = 0; j <= gradComp[1]; j++) {
-                            Cell currentCell = gameState.map[a.x+i][a.y+j];
+                            Cell currentCell = gameState.map[a.y+j][a.x+i];
                             if (currentCell.type == CellType.DIRT) {
                                 return false;
                             }
@@ -495,7 +553,7 @@ public class Bot {
                     }
                     else {
                         for (int j = 0; j >= gradComp[1]; j--){
-                            Cell currentCell = gameState.map[a.x+i][a.y+j];
+                            Cell currentCell = gameState.map[a.y+j][a.x+i];
                             if (currentCell.type == CellType.DIRT) {
                                 return false;
                             }
@@ -507,7 +565,7 @@ public class Bot {
                 for (int i = 0 ; i >= gradComp[0]; i--) {
                     if (gradComp[1] >= 0){
                         for (int j = 0; j <= gradComp[1]; j++) {
-                            Cell currentCell = gameState.map[a.x+i][a.y+j];
+                            Cell currentCell = gameState.map[a.y+j][a.x+i];
                             if (currentCell.type == CellType.DIRT) {
                                 return false;
                             }
@@ -515,7 +573,7 @@ public class Bot {
                     }
                     else {
                         for (int j = 0; j >= gradComp[1]; j--){
-                            Cell currentCell = gameState.map[a.x+i][a.y+j];
+                            Cell currentCell = gameState.map[a.y+j][a.x+i];
                             if (currentCell.type == CellType.DIRT) {
                                 return false;
                             }
