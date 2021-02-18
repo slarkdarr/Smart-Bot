@@ -205,7 +205,7 @@ public class Bot2 {
             Cell movetoCell = gameState.map[position.x+d.x][position.y+d.y];
 
             // Rotate until unoccupied cell is found
-            while (movetoCell.occupier.playerId == gameState.myPlayer.id) // If occupied by enemy, evade or shoot will be prioritized
+            while (gameState.map[position.x+d.x][position.y+d.y].occupier.playerId == gameState.myPlayer.id) // If occupied by enemy, evade or shoot will be prioritized
             {
                 d = rotateCCW(d);
                 movetoCell = gameState.map[position.x+d.x][position.y+d.y];
