@@ -85,12 +85,15 @@ public class Bot2 {
                 case 0: // MoveTo
                 case 1: // MoveToPowerUp
                 case 2: // Evade
+                    System.out.println(String.format("Doing command %d on worm %d position %d %d with target %d %d", commandID, currentWorm.id, currentWorm.position.x, currentWorm.position.y, target.x, target.y));
                     command = new MoveCommand(target.x, target.y);
                     break;
                 case 3: // Shoot
                     command = new ShootCommand(aim);
+                    System.out.println(String.format("Doing command %d on worm %d position %d %d with target %d %d", commandID, currentWorm.id, currentWorm.position.x, currentWorm.position.y, aim.x, aim.y));
                     break;
                 case 4: // Dig
+                    System.out.println(String.format("Doing command %d on worm %d position %d %d with target %d %d", commandID, currentWorm.id, currentWorm.position.x, currentWorm.position.y, target.x, target.y));
                     command = new DigCommand(target.x, target.y);
                     break;
                 case 5: // BananaBomb
@@ -100,6 +103,7 @@ public class Bot2 {
                     } else {
                         command = new BananaBombCommand(target.x, target.y);
                     }
+                    System.out.println(String.format("Doing command %d on worm %d position %d %d with target %d %d", commandID, currentWorm.id, currentWorm.position.x, currentWorm.position.y, target.x, target.y));
                     break;
                 case 6: // Snowball Command
                     if (currentWorm.id != 3)
@@ -108,11 +112,14 @@ public class Bot2 {
                     } else {
                         command = new SnowballCommand(target.x, target.y);
                     }
+                    System.out.println(String.format("Doing command %d on worm %d position %d %d with target %d %d", commandID, currentWorm.id, currentWorm.position.x, currentWorm.position.y, target.x, target.y));
                     break;
                 default: // Logical error somewhere, fix later
                     command = new DoNothingCommand();
                     break;
             }
+
+
             return;
         }
 
