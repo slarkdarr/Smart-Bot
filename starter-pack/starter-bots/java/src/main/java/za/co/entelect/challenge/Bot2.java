@@ -83,6 +83,8 @@ public class Bot2 {
             Position target = new Position();
             target.x = inversedTarget.x;
             target.y = inversedTarget.y;
+
+            System.out.println(String.format("Map cell [16][15] has position x=%d y=%d", gameState.map[16][15].x, gameState.map[16][15].y));
             switch(commandID)
             {
                 case 0: // MoveTo
@@ -263,7 +265,8 @@ public class Bot2 {
 
         private void constructMoveToPowerUp()
         {
-            Cell movetoCell = gameState.map[commandParams[0].x][commandParams[0].y];
+//            Cell movetoCell = gameState.map[commandParams[0].x][commandParams[0].y];
+            Cell movetoCell = gameState.map[commandParams[0].y][commandParams[0].x];
 
             if (movetoCell.powerUp != null)
             {
@@ -428,13 +431,15 @@ public class Bot2 {
                 commandParams[4].y = commandParams[0].y;
             } else if (weights[0] == -1){
                 Direction nearby = Direction.N;
-                Cell digThis = gameState.map[position.x + nearby.x][position.y + nearby.y];
+//                Cell digThis = gameState.map[position.x + nearby.x][position.y + nearby.y];
+                Cell digThis = gameState.map[position.y + nearby.y][position.x + nearby.x];
 
 
                 while (digThis.type != CellType.DIRT)
                 {
                     nearby = rotateCCW(nearby);
-                    digThis = gameState.map[position.x + nearby.x][position.y + nearby.y];
+//                    digThis = gameState.map[position.x + nearby.x][position.y + nearby.y];
+                    digThis = gameState.map[position.y + nearby.y][position.x + nearby.x];
                 }
 
                 if (digThis.type == CellType.DIRT)
@@ -646,7 +651,11 @@ public class Bot2 {
             x += aim.x;
             y += aim.y;
 
-            if (gameState.map[x][y].type == CellType.DIRT || gameState.map[x][y].type == CellType.DEEP_SPACE)
+//            if (gameState.map[x][y].type == CellType.DIRT || gameState.map[x][y].type == CellType.DEEP_SPACE)
+//            {
+//                return false;
+//            }
+            if (gameState.map[y][x].type == CellType.DIRT || gameState.map[y][x].type == CellType.DEEP_SPACE)
             {
                 return false;
             }
