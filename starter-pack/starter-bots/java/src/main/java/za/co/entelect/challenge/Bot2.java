@@ -205,7 +205,7 @@ public class Bot2 {
             Cell movetoCell = gameState.map[position.x+d.x][position.y+d.y];
 
             // Rotate until unoccupied cell is found
-            if (movetoCell.occupier.playerId != null)
+            if (movetoCell.occupier != null)
             {
                 d = rotateCCW(d);
                 movetoCell = gameState.map[position.x+d.x][position.y+d.y];
