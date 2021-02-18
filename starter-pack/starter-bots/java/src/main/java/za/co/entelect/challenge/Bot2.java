@@ -154,6 +154,16 @@ public class Bot2 {
             this.weights = new int[7];
             this.commandParams = new Position[7];
 
+            Position def = new Position();
+            def.x = 16;
+            def.y = 16;
+
+            for(int i = 0; i < 7; i++)
+            {
+                this.weights[i] = -1;
+                this.commandParams[i] = def;
+            }
+
             this.position = currentWorm.position;
 
             this.distancesToPOI[0] = euclideanDistance(position.x, position.y, 16, 16);
@@ -225,6 +235,8 @@ public class Bot2 {
                 weights[4] = -1;
             } else if (movetoCell.type == CellType.DIRT)
             {
+                commandParams[0].x = movetoCell.x;
+                commandParams[0].y = movetoCell.y;
                 weights[4] = 7;
             }
         }
