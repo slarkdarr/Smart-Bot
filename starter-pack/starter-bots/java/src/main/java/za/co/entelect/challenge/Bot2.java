@@ -78,8 +78,11 @@ public class Bot2 {
                 return;
             }
 
-            Position target = strategy.getCommandParams(commandID);
+            Position inversedTarget = strategy.getCommandParams(commandID);
             Direction aim = strategy.getShootParams();
+            Position target = new Position();
+            target.x = inversedTarget.y;
+            target.y = inversedTarget.x;
             switch(commandID)
             {
                 case 0: // MoveTo
@@ -218,7 +221,7 @@ public class Bot2 {
                     break;
             } // May hang around in center for a bit
 
-            Direction d = getDirectionAToB(dest.x, dest.y, position.x, position.y);
+            Direction d = getDirectionAToB(position.x, position.y, dest.x, dest.y);
             Cell movetoCell = gameState.map[position.x+d.x][position.y+d.y];
 
             // Rotate until unoccupied cell is found
