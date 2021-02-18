@@ -41,21 +41,21 @@ public class Bot2 {
         private ActionPlanner strategy;
 
         /*
-        * POSSIBLE MOVES    Weight                              Description
-        * MoveTo*           5                                   Towards center or powerup (nearest)
-        * MoveToPowerUp     25                                  Towards powerup
-        * Evade             2 * 8 - 1 (+40 if lethal)           Always away from firing line
-        * Shoot             2 * 8 (+1 per enemy health delta)   Always targeted at closest enemy
-        * Dig               7                                   Always when MoveTo is obstructed
-        * Banana Bomb*      14 * n                              Always towards enemy, can invoke select, ignores line of sight
-        * Snowball*         17                                  Always towards enemy, can invoke select, needs line of sight
-        * DoNothing         0                                   Chill
-        *
-        * MoveTo will try to maintain a distance of 3-2 from center point.
-        * n is number of enemies, 14 is average expected damage
-        * Snowball is given a LOS restriction so that at least one worm is guaranteed to be able to follow up with a shot
-        * invalid moves have weight < 0
-        * */
+         * POSSIBLE MOVES    Weight                              Description
+         * MoveTo*           5                                   Towards center or powerup (nearest)
+         * MoveToPowerUp     25                                  Towards powerup
+         * Evade             2 * 8 - 1 (+40 if lethal)           Always away from firing line
+         * Shoot             2 * 8 (+1 per enemy health delta)   Always targeted at closest enemy
+         * Dig               7                                   Always when MoveTo is obstructed
+         * Banana Bomb*      14 * n                              Always towards enemy, can invoke select, ignores line of sight
+         * Snowball*         17                                  Always towards enemy, can invoke select, needs line of sight
+         * DoNothing         0                                   Chill
+         *
+         * MoveTo will try to maintain a distance of 3-2 from center point.
+         * n is number of enemies, 14 is average expected damage
+         * Snowball is given a LOS restriction so that at least one worm is guaranteed to be able to follow up with a shot
+         * invalid moves have weight < 0
+         * */
 
         public MoveSet()
         {
@@ -125,21 +125,21 @@ public class Bot2 {
     class ActionPlanner {
 
         /*POI               ID
-        * Center            0
-        * PowerUp 1         1
-        * PowerUp 2         2
-        * */
+         * Center            0
+         * PowerUp 1         1
+         * PowerUp 2         2
+         * */
         private int distancesToPOI[] = new int[3];
 
         /*ACTION            ID
-        * MoveTo            0
-        * MoveToPowerUp     1
-        * Evade             2
-        * Shoot             3
-        * Dig               4
-        * BananaBomb        5
-        * SnowBall          6
-        * */
+         * MoveTo            0
+         * MoveToPowerUp     1
+         * Evade             2
+         * Shoot             3
+         * Dig               4
+         * BananaBomb        5
+         * SnowBall          6
+         * */
 
         // Weights of actions are stored in weights attribute
         private int weights[];
@@ -666,5 +666,3 @@ public class Bot2 {
     }
 
 }
-
-
