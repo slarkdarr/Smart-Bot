@@ -241,14 +241,14 @@ public class Bot2 {
 
             if (movetoCell.type == CellType.AIR)
             {
-                System.out.println(String.format("Found air cell %d %d near position %d %d at direction  ", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
+                System.out.println(String.format("Found air cell %d %d near position %d %d at direction %d %d", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
                 commandParams[0].x = movetoCell.x;
                 commandParams[0].y = movetoCell.y;
                 weights[0] = 5;
                 weights[4] = -1;
             } else if (movetoCell.type == CellType.DIRT)
             {
-                System.out.println(String.format("Found dirt cell %d %d near position %d %d at direction  ", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
+                System.out.println(String.format("Found dirt cell %d %d near position %d %d at direction %d %d", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
                 commandParams[0].x = movetoCell.x;
                 commandParams[0].y = movetoCell.y;
                 weights[0] = -1;
