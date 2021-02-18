@@ -334,7 +334,7 @@ public class Bot2 {
                 dangerPos = position;
                 dangerPos.x += escape.x;
                 dangerPos.y += escape.y;
-                targetEscape = gameState.map[dangerPos.x][dangerPos.y];
+                targetEscape = gameState.map[dangerPos.y][dangerPos.x];
                 if (targetEscape.type == CellType.AIR)
                 {
                     foundEscape = true;
@@ -346,7 +346,7 @@ public class Bot2 {
                     escape = Rotate180(escape);
                     dangerPos.x += escape.x;
                     dangerPos.y += escape.y;
-                    targetEscape = gameState.map[dangerPos.x][dangerPos.y];
+                    targetEscape = gameState.map[dangerPos.y][dangerPos.x];
                     if (targetEscape.type == CellType.AIR)
                     {
                         foundEscape = true;
@@ -372,7 +372,7 @@ public class Bot2 {
                     dangerPos = position;
                     dangerPos.x += escape.x;
                     dangerPos.y += escape.y;
-                    targetEscape = gameState.map[dangerPos.x][dangerPos.y];
+                    targetEscape = gameState.map[dangerPos.y][dangerPos.x];
                     if (targetEscape.type == CellType.LAVA || targetEscape.type == CellType.AIR)
                     {
                         foundEscape = true;
@@ -674,7 +674,7 @@ public class Bot2 {
             x += aim.x;
             y += aim.y;
 
-            if (gameState.map[x][y].type == CellType.DIRT || gameState.map[x][y].type == CellType.DEEP_SPACE)
+            if (gameState.map[y][x].type == CellType.DIRT || gameState.map[y][x].type == CellType.DEEP_SPACE)
             {
                 return false;
             }
