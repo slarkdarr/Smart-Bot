@@ -9,7 +9,6 @@ import za.co.entelect.challenge.enums.PowerUpType;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.lang.system;
 
 public class Bot2 {
 
@@ -112,7 +111,6 @@ public class Bot2 {
                     break;
                 default: // Logical error somewhere, fix later
                     command = new DoNothingCommand();
-                    System.out.console.log("Logical error in class: MoveSet");
                     break;
             }
             return;
@@ -524,6 +522,13 @@ public class Bot2 {
 
     private float getGradientAToB(int x1, int y1, int x2, int y2)
     {
+        if (y1 == y2)
+        {
+            return 0.0f;
+        } else if (x1 == x2)
+        {
+            return 999.0f;
+        }
         return (y2 - y1) / (x2 - x1);
     }
 
