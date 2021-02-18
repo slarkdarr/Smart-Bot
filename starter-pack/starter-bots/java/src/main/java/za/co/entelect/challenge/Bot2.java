@@ -201,7 +201,7 @@ public class Bot2 {
                 case 2:
                     dest.x = 15; dest.y = 14;
                     break;
-            }
+            } // May hang around in center for a bit
 
             Direction d = getDirectionAToB(dest.x, dest.y, position.x, position.y);
             Cell movetoCell = gameState.map[position.x+d.x][position.y+d.y];
@@ -397,6 +397,16 @@ public class Bot2 {
             int highestWeight = -1;
             int tempWeight = -1;
 
+            if (player.worms[1].bananaBombs.count <= 0 || player.worms[1].health <= 0)
+            {
+                weights[6] = -1;
+                return;
+            } else if (gameState.currentWormId != 1 && player.remainingWormsSelection <= 0)  // REMINDER: ADD CHECK FOR SELECTION TOKEN COUNT
+            {
+                weights[6] = -1;
+                return;
+            }
+
             for(int i = 0; i < 3; i++)
             {
                 int distance = euclideanDistance(position.x, position.y, opponent.worms[i].position.x, opponent.worms[i].position.y);
@@ -432,9 +442,11 @@ public class Bot2 {
             if (player.worms[2].snowballs.count <= 0 || player.worms[2].health <= 0)
             {
                 weights[6] = -1;
-            } else if (gameState.currentWormId != 2) // REMINDER: ADD CHECK FOR SELECTION TOKEN COUNT
+                return;
+            } else if (gameState.currentWormId != 2 && player.remainingWormsSelection <= 0)  // REMINDER: ADD CHECK FOR SELECTION TOKEN COUNT
             {
                 weights[6] = -1;
+                return;
             }
 
             List<Worm> targets = new ArrayList<Worm>();
@@ -533,7 +545,7 @@ public class Bot2 {
         int max  = 0;
         for (int i = 0; i < arr.length; i++)
         {
-            if (arr[i] < arr[max])
+            if (arr[i] <= arr[max])
             {
                 max = i;
             }
