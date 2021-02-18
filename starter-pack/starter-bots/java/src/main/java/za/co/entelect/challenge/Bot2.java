@@ -228,6 +228,8 @@ public class Bot2 {
                 movetoCell = gameState.map[position.x+d.x][position.y+d.y];
             }
 
+            System.out.println(String.format("Moving to direction %d %d", d.x, d.y));
+            
 //            while (movetoCell.occupier.playerId == gameState.myPlayer.id) // If occupied by enemy, evade or shoot will be prioritized
 //            {
 //                d = rotateCCW(d);
