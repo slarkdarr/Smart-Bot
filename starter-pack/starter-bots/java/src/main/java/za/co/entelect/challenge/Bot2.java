@@ -17,12 +17,14 @@ public class Bot2 {
     private GameState gameState;
     private Opponent opponent;
     private MyWorm currentWorm;
+    private MyPlayer player;
 
     public Bot2(Random random, GameState gameState)
     {
         this.random = random;
         this.gameState = gameState;
         this.opponent = gameState.opponents[0];
+        this.player = gameState.myPlayer;
         this.currentWorm = getCurrentWorm(gameState);
     }
 
@@ -390,12 +392,88 @@ public class Bot2 {
 
         private void constructBananaBomb()
         {
+            List<Worm> targets = new ArrayList<Worm>();
+            int highestWeightIndex = 4;
+            int highestWeight = -1;
+            int tempWeight = -1;
 
+            for(int i = 0; i < 3; i++)
+            {
+                int distance = euclideanDistance(position.x, position.y, opponent.worms[i].position.x, opponent.worms[i].position.y);
+                if (distance <= 5)
+                {
+                    targets.add(opponent.worms[i]);
+
+                    tempWeight = 0;
+                    for(Worm j: opponent.worms)
+                    {
+                        int temp = (3 - euclideanDistance(opponent.worms[i].position.x, opponent.worms[i].position.y, j.position.x, j.position.y)) * 7;
+                        if (temp > 0) { tempWeight += temp; }
+                    }
+
+                    if (tempWeight > highestWeight && !friendInRadius(opponent.worms[i].position, 2, 1))
+                    {
+                        highestWeight = tempWeight;
+                        highestWeightIndex = i;
+                    }
+                }
+            }
+
+            if (highestWeightIndex != 4)
+            {
+                commandParams[5].x = opponent.worms[highestWeightIndex].position.x;
+                commandParams[5].y = opponent.worms[highestWeightIndex].position.y;
+                weights[5] = highestWeight;
+            }
         }
 
         private void constructSnowBall()
         {
+            if (player.worms[2].snowballs.count <= 0 || player.worms[2].health <= 0)
+            {
+                weights[6] = -1;
+            } else if (gameState.currentWormId != 2) // REMINDER: ADD CHECK FOR SELECTION TOKEN COUNT
+            {
+                weights[6] = -1;
+            }
 
+            List<Worm> targets = new ArrayList<Worm>();
+            int highestWeightIndex = 4;
+            int highestWeight = -1;
+            int tempWeight;
+
+            for(int i = 0; i < 3; i++)
+            {
+                int distance = euclideanDistance(position.x, position.y, opponent.worms[i].position.x, opponent.worms[i].position.y);
+                Direction aim = getDirectionAToB(position.x, position.y, opponent.worms[i].position.x, opponent.worms[i].position.y);
+
+                if (distance <= 5 && LineOfSight(position, aim, opponent.worms[i].position))
+                {
+                    targets.add(opponent.worms[i]);
+
+                    tempWeight = 17;
+                    for(Worm j: opponent.worms)
+                    {
+                        int temp = euclideanDistance(opponent.worms[i].position.x, opponent.worms[i].position.y, j.position.x, j.position.y);
+                        if (temp <= 1) { tempWeight += temp; }
+                    }
+
+                    tempWeight = 17 + tempWeight * 8;
+
+                    if (tempWeight > highestWeight && !friendInRadius(opponent.worms[i].position, 2, 1))
+                    {
+                        highestWeight = tempWeight;
+                        highestWeightIndex = i;
+                    }
+                }
+            }
+
+            if (highestWeightIndex != 4)
+            {
+                commandParams[6].x = opponent.worms[highestWeightIndex].position.x;
+                commandParams[6].y = opponent.worms[highestWeightIndex].position.y;
+                weights[6] = highestWeight;
+            }
         }
     }
 
@@ -447,7 +525,6 @@ public class Bot2 {
                 max = i;
             }
         }
-
         return max;
     }
 
@@ -464,6 +541,24 @@ public class Bot2 {
 
         return max;
     }
+
+    private boolean friendInRadius(Position origin, int radius, int wormExceptionID)
+    {
+        boolean isFriendlyFire = false;
+        int c = 0;
+        while(!isFriendlyFire && c < 4)
+        {
+            if (euclideanDistance(origin.x, origin.y , player.worms[c].position.x, player.worms[c].position.y) <= radius
+                    && c != wormExceptionID)
+            {
+                isFriendlyFire = true;
+            }
+            c++;
+        }
+
+        return  isFriendlyFire;
+    }
+
 
     // Range > 0
     private boolean LineOfSight(int x, int y, Direction aim, int range)
