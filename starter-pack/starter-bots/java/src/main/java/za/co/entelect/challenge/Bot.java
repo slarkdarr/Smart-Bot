@@ -264,7 +264,7 @@ public class Bot {
             }
 
             else if (currentWorm.id == 2) { //Agent
-                int AllyAgentPow = bananaBombCount * 20 + currentWorm.health;
+                int AllyAgentPow = 20 + currentWorm.health;
 
                 if (AllyAgentPow >= EnemyCommando.health && EnemyCommando.health > 0) {
                     return EnemyCommando.position;
@@ -276,7 +276,7 @@ public class Bot {
             }
 
             else if (currentWorm.id == 3){ // Technical
-                int AllyTechPow = currentWorm.snowballs.count * 25 + currentWorm.health;
+                int AllyTechPow = 20 + currentWorm.health;
 
                 if (AllyTechPow >= EnemyCommando.health && EnemyCommando.health > 0) {
                     return EnemyCommando.position;
