@@ -568,8 +568,8 @@ public class Bot2 {
     {
         if (xA == xB && yA != yB)
         {
-            if (yA < yB)    { return Direction.N; }
-            else            { return Direction.S; }
+            if (yA < yB)    { return Direction.S; }
+            else            { return Direction.N; }
         } else
         if (xA != xB && yA == yB)
         {
@@ -579,8 +579,8 @@ public class Bot2 {
             float gDir = getGradientAToB(xA, yA, xB, yB);
             Direction result;
 
-            if (gDir > 0) { result = (xA < xB) ? Direction.SE : Direction.NW; } else
-            if (gDir < 0) { result = (xA < xB) ? Direction.NE : Direction.SW; }
+            if (gDir > 0) { result = (xA < xB) ? Direction.NE : Direction.SW; } else
+            if (gDir < 0) { result = (xA < xB) ? Direction.SE : Direction.NW; }
         }
 
         return Direction.S;
