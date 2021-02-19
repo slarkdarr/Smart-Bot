@@ -58,8 +58,7 @@ public class Bot2 {
 
         public MoveSet()
         {
-            strategy = new ActionPlanner();
-            selectCommand(strategy);
+            selectCommand();
         }
 
         public Command getCommand()
@@ -67,8 +66,10 @@ public class Bot2 {
             return command;
         }
 
-        private void selectCommand(ActionPlanner strategy)
+        private void selectCommand()
         {
+            strategy = new ActionPlanner();
+
             int commandWeights[] = strategy.getWeights();
             int commandID = indexOfMax(commandWeights);
 
@@ -83,6 +84,13 @@ public class Bot2 {
             Position target = new Position();
             target.x = inversedTarget.x;
             target.y = inversedTarget.y;
+
+            System.out.println(String.format("Command 0 from public attribute params %d %d weight %d", strategy.commandParams[0].x, strategy.commandParams[0].y, commandWeights[0]));
+            for (int i = 0; i < 7; i++)
+            {
+                System.out.println(String.format("Command %d params %d %d weight %d", i, strategy.getCommandParams(i).x, strategy.getCommandParams(i).y, commandWeights[i]));
+            }
+
 
             System.out.println(String.format("Map cell [16][15] has position x=%d y=%d", gameState.map[16][15].x, gameState.map[16][15].y));
             switch(commandID)
@@ -155,8 +163,8 @@ public class Bot2 {
         private int weights[];
 
         // Action parameters are stored in commandParams and shootParams
-        private Position commandParams[];
-        private Direction shootParams;
+        public Position commandParams[];
+        public Direction shootParams;
 
         private Position position;
 
@@ -166,14 +174,15 @@ public class Bot2 {
             this.weights = new int[7];
             this.commandParams = new Position[7];
 
-            Position def = new Position();
-            def.x = 16;
-            def.y = 16;
+            int x = 16;
+            int y = 16;
 
             for(int i = 0; i < 7; i++)
             {
                 this.weights[i] = -1;
-                this.commandParams[i] = def;
+                this.commandParams[i] = new Position();
+                commandParams[i].x = 0;
+                commandParams[i].y = 0;
             }
 
             this.position = currentWorm.position;
@@ -182,13 +191,34 @@ public class Bot2 {
             this.distancesToPOI[1] = euclideanDistance(position.x, position.y, 14, 15);
             this.distancesToPOI[2] = euclideanDistance(position.x, position.y, 15, 14);
 
+            System.out.println(String.format("Constructing MoveTo"));
             constructMoveTo();
+            checkCommandParams();
+
+            System.out.println(String.format("Constructing MoveToPowerUp"));
             constructMoveToPowerUp();
+            checkCommandParams();
+
+            System.out.println(String.format("Constructing Evade"));
             constructEvade();
+            checkCommandParams();
+
+            System.out.println(String.format("Constructing Shoot"));
             constructShoot();
+            checkCommandParams();
+
+            System.out.println(String.format("Constructing Dig"));
             constructDig();
+            checkCommandParams();
+
+            System.out.println(String.format("Constructing Banana"));
             constructBananaBomb();
+            checkCommandParams();
+
+            System.out.println(String.format("Constructing Snowball"));
             constructSnowBall();
+            checkCommandParams();
+            System.out.println(String.format("Exit ActionPlanner"));
         }
 
         public int[] getWeights()
@@ -204,6 +234,17 @@ public class Bot2 {
             return shootParams;
         }
 
+        private void checkCommandParams()
+        {
+
+            System.out.println(String.format("Command 0 params %d %d weight %d", commandParams[0].x, commandParams[0].y, weights[0]));
+            System.out.println(String.format("Command 1 params %d %d weight %d", commandParams[1].x, commandParams[1].y, weights[1]));
+            System.out.println(String.format("Command 2 params %d %d weight %d", commandParams[2].x, commandParams[2].y, weights[2]));
+            System.out.println(String.format("Command 3 params %d %d weight %d", commandParams[3].x, commandParams[3].y, weights[3]));
+            System.out.println(String.format("Command 4 params %d %d weight %d", commandParams[4].x, commandParams[4].y, weights[4]));
+            System.out.println(String.format("Command 5 params %d %d weight %d", commandParams[5].x, commandParams[5].y, weights[5]));
+            System.out.println(String.format("Command 6 params %d %d weight %d", commandParams[6].x, commandParams[6].y, weights[6]));
+        }
 
         // construct action data
         private void constructMoveTo()
@@ -245,16 +286,19 @@ public class Bot2 {
 
             if (movetoCell.type == CellType.AIR)
             {
-                System.out.println(String.format("Found air cell %d %d near position %d %d at direction %d %d", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
+//                System.out.println(String.format("Found air cell %d %d near position %d %d at direction %d %d", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
                 commandParams[0].x = movetoCell.x;
                 commandParams[0].y = movetoCell.y;
+                System.out.println(String.format("Found air cell %d %d near position %d %d at direction %d %d", commandParams[0].x, commandParams[0].y, position.x, position.y, d.x, d.y));
                 weights[0] = 5;
                 weights[4] = -1;
+                System.out.println(String.format("Command inside MoveToConstructor 0 params %d %d weight %d", commandParams[0].x, commandParams[0].y, weights[0]));
             } else if (movetoCell.type == CellType.DIRT)
             {
-                System.out.println(String.format("Found dirt cell %d %d near position %d %d at direction %d %d", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
+//                System.out.println(String.format("Found dirt cell %d %d near position %d %d at direction %d %d", movetoCell.x, movetoCell.y, position.x, position.y, d.x, d.y));
                 commandParams[0].x = movetoCell.x;
                 commandParams[0].y = movetoCell.y;
+                System.out.println(String.format("Found dirt cell %d %d near position %d %d at direction %d %d", commandParams[0].x, commandParams[0].y, position.x, position.y, d.x, d.y));
                 weights[0] = -1;
                 weights[4] = 7;
             } else if (target == 0)
@@ -279,6 +323,15 @@ public class Bot2 {
                     weights[1] = -1;
                 }
             }
+
+//            commandParams[0].x = 1;
+//            commandParams[1].x = 2;
+//            commandParams[2].x = 3;
+//            commandParams[3].x = 4;
+//            commandParams[4].x = 5;
+//            commandParams[5].x = 6;
+//            commandParams[6].x = 7;
+
         }
 
         private void constructEvade()
@@ -573,17 +626,17 @@ public class Bot2 {
         } else
         if (xA != xB && yA == yB)
         {
-            if (xA < xB)    { return Direction.W; }
-            else            { return Direction.E; }
+            if (xA < xB)    { return Direction.E; }
+            else            { return Direction.W; }
         } else {
             float gDir = getGradientAToB(xA, yA, xB, yB);
             Direction result;
 
-            if (gDir > 0) { result = (xA < xB) ? Direction.NE : Direction.SW; } else
-            if (gDir < 0) { result = (xA < xB) ? Direction.SE : Direction.NW; }
-        }
+            if (gDir > 0) { result = (xA < xB) ? Direction.SE : Direction.NW; } else
+                { result = (xA < xB) ? Direction.NE : Direction.SW; }
 
-        return Direction.S;
+            return result;
+        }
     }
 
     private float getGradientAToB(int x1, int y1, int x2, int y2)
