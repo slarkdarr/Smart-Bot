@@ -16,6 +16,7 @@ public class Bot {
     private Opponent opponent;
     private MyWorm currentWorm;
     private int remainingSelect;
+    private List<Position> powerUpsLocs;
     private int currentStrat;
     private int snowballRadius;
     private int snowballRange;
@@ -30,14 +31,15 @@ public class Bot {
         this.opponent = gameState.opponents[0];
         this.currentWorm = getCurrentWorm(gameState);
         this.remainingSelect = gameState.myPlayer.remainingWormsSelection;
+        this.powerUpsLocs = getPowerUpLocations(gameState);
         this.snowballRadius = getSnowBallRadius(gameState);
         this.snowballRange = getSnowballRange(gameState);
         this.snowballCount = getSnowballCount(gameState);
         this.bananaBombRadius = getBananaBombRadius(gameState);
         this.bananaBombRange = getBananaBombRange(gameState);
         this.bananaBombCount = getBananaBombCount(gameState);
-        if (gameState.currentRound <= 40){
-            this.currentStrat = 2; // All worms goes to the middle of the map in early rounds.
+        if (gameState.currentRound <= 10){
+            this.currentStrat = 1; // All worms goes to the middle of the map in early rounds.
         }
         else {
             this.currentStrat = 2; // Hunt enemies
@@ -45,6 +47,21 @@ public class Bot {
     }
 
     // Getters
+    private List<Position> getPowerUpLocations(GameState gameState){
+        List<Position> powUpsLocs = new ArrayList<>();
+        for (int i = 0; i < gameState.mapSize; i++){
+            for (int j = 0; j < gameState.mapSize; j++){
+                if (gameState.map[j][i].powerUp != null){
+                    Position powUpLoc = new Position();
+                    powUpLoc.x = i;
+                    powUpLoc.y = j;
+                    powUpsLocs.add(powUpLoc);
+                }
+            }
+        }
+        return powUpsLocs;
+    }
+
     private int getShootRange(GameState gameState, int WormID){
         return gameState.myPlayer.worms[WormID-1].weapon.range;
     }
@@ -81,7 +98,25 @@ public class Bot {
     public Command run() {
 
         Worm enemyWorm = getFirstWormInRange();
-        Worm closeEnemyWorm = getFirstObstructedWormInRange(); // Tanpa peduli DIRT sebagai penghalang
+
+
+        //Check close Power Ups
+        int ClosestWormIDtoPowerUp = IDofClosestAllyWormtoPowerUp();
+        if (ClosestWormIDtoPowerUp != -1){
+            if (getTargetPos(3).x != -999) {
+                MyWorm closestWormToPowerUp = gameState.myPlayer.worms[ClosestWormIDtoPowerUp-1];
+                List<Cell> surroundingBlocks = getSurroundingCells(closestWormToPowerUp.position.x, closestWormToPowerUp.position.y);
+                Position TargetPos = getTargetPos(3);
+                Cell block = ClosestCelltoTarget(surroundingBlocks, TargetPos);
+                if (block.type == CellType.AIR && currentWorm == closestWormToPowerUp ) {
+                    System.out.println(String.format("Move to power up in %d %d from, bot to %d %d", TargetPos.x, TargetPos.y, block.x, block.y));
+                    return new MoveCommand(block.x, block.y);
+                } else if (block.type == CellType.DIRT && currentWorm == closestWormToPowerUp) {
+                    return new DigCommand(block.x, block.y);
+                }
+            }
+        }
+
 
         //Check snowball
         MyWorm AllyTech = gameState.myPlayer.worms[2];
@@ -115,26 +150,16 @@ public class Bot {
                     return new SelectCommand(2, 5, SBTarget.x, SBTarget.y);
                 }
             }
-//            if (closeEnemyWorm != null) {
-//                if (currentWorm.id == 2 && currentWorm.health > 0 && bananaBombCount > 0) {
-//                    List<List<Worm>> ListTwoTeamsMembersInVicinity = getTeammatesInRadius(closeEnemyWorm.position, getBananaBombRadius(gameState), 2);
-//                    if (bananaBombCount > 0 && ListTwoTeamsMembersInVicinity.get(0).size() == 0) {
-//                        if (currentWorm.health <= 60 || ListTwoTeamsMembersInVicinity.get(1).size() > 1 ) {
-//                            return new BananaBombCommand(closeEnemyWorm.position.x, closeEnemyWorm.position.y);
-//                        }
-//                    }
-//                }
-//            }
         }
+        //PEW PEW!
 
-        if (enemyWorm != null) {
+        if (enemyWorm != null && isNoDirtAndAllyInBetweenCardinalAandB(currentWorm.position, enemyWorm.position)) {
             Direction direction = resolveDirection(currentWorm.position, enemyWorm.position);
             return new ShootCommand(direction);
         }
 
         //Movement
         List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
-
 
         if (getTargetPos(currentStrat).x != -999) {
             Cell block = ClosestCelltoTarget(surroundingBlocks, getTargetPos(currentStrat));
@@ -232,8 +257,19 @@ public class Bot {
 
     // Cari posisi target berdasarkan strategi.
     private Position getTargetPos(int strat) {
+        if (strat == 3){
+            for (int i = 0; i < 3; i++){
+                MyWorm allyWorm = gameState.myPlayer.worms[i];
+                Position allyWormPos = allyWorm.position;
+                Position closestPowUp = ClosestPowerUp(powerUpsLocs, allyWormPos);
+                int distancetoPowUp= euclideanDistance(allyWormPos.x, allyWormPos.y, closestPowUp.x, closestPowUp.y);
+                if (distancetoPowUp < 8){
+                    return closestPowUp;
+                }
+            }
+        }
 
-        if (strat == 1) {// Go To Mid,
+        else if (strat == 1) {// Go To Mid,
             Position Middle = new Position();
             Middle.x = 16;
             Middle.y = 16;
@@ -251,6 +287,7 @@ public class Bot {
             EnemyTechnical.health = opponent.worms[2].health;
             int x;
             int y;
+
             if (currentWorm.id == 1) { //Agent
                 int AllyCommPow = currentWorm.health;
 
@@ -265,7 +302,6 @@ public class Bot {
 
             else if (currentWorm.id == 2) { //Agent
                 int AllyAgentPow = 20 + currentWorm.health;
-
                 if (AllyAgentPow >= EnemyCommando.health && EnemyCommando.health > 0) {
                     return EnemyCommando.position;
                 } else if (AllyAgentPow >= EnemyAgent.health && EnemyAgent.health > 0) {
@@ -274,10 +310,8 @@ public class Bot {
                     return EnemyTechnical.position;
                 }
             }
-
             else if (currentWorm.id == 3){ // Technical
-                int AllyTechPow = 20 + currentWorm.health;
-
+                int AllyTechPow = currentWorm.snowballs.count * 10 + currentWorm.health;
                 if (AllyTechPow >= EnemyCommando.health && EnemyCommando.health > 0) {
                     return EnemyCommando.position;
                 } else if (AllyTechPow >= EnemyAgent.health && EnemyAgent.health > 0) {
@@ -286,7 +320,14 @@ public class Bot {
                     return EnemyTechnical.position;
                 }
             }
+
+
+
+
+
         }
+
+        // Strategi spesifik worm
         Position blank = new Position();
         blank.x = -999;
         blank.y = -999;
@@ -356,8 +397,16 @@ public class Bot {
         int nAllies = ListTeamWorms.get(0).size();
         int nEnemies = ListTeamWorms.get(1).size();
         if (nEnemies > 0) {
+            float totalDmg = 0;
             for (int i = 0; i < ListTeamWorms.get(1).size(); i++) {
-                return 14 * nEnemies - 14 * nAllies + DirtInRadius(centralArea,bananaBombRadius) * 7;
+                Position enemyPos = ListTeamWorms.get(1).get(i).position;
+                int getDistFromCenter = euclideanDistance(centralArea.x,centralArea.y,enemyPos.x, enemyPos.y);
+                int bananaFullDmg = gameState.myPlayer.worms[1].bananaBombs.damage;
+                //Damage dealt
+                totalDmg += (bananaFullDmg*(bananaBombRadius+1-getDistFromCenter))/(bananaBombRadius+1);
+            }
+            if (totalDmg >= 20) { //20 = Damage min
+                return 14 * nEnemies - 14 * nAllies + DirtInRadius(centralArea, bananaBombRadius) * 7;
             }
         }
         return -999;
@@ -383,14 +432,19 @@ public class Bot {
         int closestIdx = 0;
         int currRange;
         int closestRange;
-        for (int i = 1; i < surrBlocks.size(); i++){
-            Cell Block = surrBlocks.get(i);
+        for (int i = 0; i < surrBlocks.size(); i++){
             closestRange = euclideanDistance(surrBlocks.get(closestIdx).x, surrBlocks.get(closestIdx).y, targetPos.x, targetPos.y);
             currRange = euclideanDistance(surrBlocks.get(i).x, surrBlocks.get(i).y, targetPos.x, targetPos.y);
+            System.out.println(String.format("SurrBlocks %d %d", surrBlocks.get(i).x, surrBlocks.get(i).y));
             if (currRange < closestRange) {
                 closestIdx = i;
             }
+            if (surrBlocks.get(i).x == targetPos.x && surrBlocks.get(i).y == targetPos.y) {
+                System.out.println(String.format("In for. Move to power up in %d %d from, bot to %d %d", targetPos.x, targetPos.y, surrBlocks.get(i).x, surrBlocks.get(i).y));
+                return surrBlocks.get(i);
+            }
         }
+        System.out.println(String.format("After for. Move to power up in %d %d from, bot to %d %d", targetPos.x, targetPos.y, surrBlocks.get(closestIdx).x, surrBlocks.get(closestIdx).y));
         return surrBlocks.get(closestIdx);
     }
 
@@ -422,6 +476,39 @@ public class Bot {
     }
 
 
+    private Position ClosestPowerUp(List<Position> powerUpsLocs, Position wormPos){
+        Position closestPos = new Position();
+        closestPos.x = 999;
+        closestPos.y = 999;
+        int closestRange;
+        int currentRange;
+        for (int i = 0; i < powerUpsLocs.size(); i++){
+            closestRange = euclideanDistance(wormPos.x, wormPos.y, closestPos.x, closestPos.y);
+            currentRange = euclideanDistance(wormPos.x, wormPos.y, powerUpsLocs.get(i).x, powerUpsLocs.get(i).y);
+            if (closestRange > currentRange){
+                closestPos.x = powerUpsLocs.get(i).x;
+                closestPos.y = powerUpsLocs.get(i).y;
+            }
+        }
+        return closestPos;
+    }
+    private int IDofClosestAllyWormtoPowerUp(){
+        int currentClosestWormId = -1;
+        int currentRange = 100;
+        for (int i = 0; i < 3; i++){
+            MyWorm AllyWorm = gameState.myPlayer.worms[i];
+            if (AllyWorm.health>0) {
+                Position AllyWormPos = AllyWorm.position;
+                Position closestPowerUptoAlly = ClosestPowerUp(powerUpsLocs, AllyWormPos); // Out of Map Coordinate if none left
+                int closestPoweruptoAllyDist = euclideanDistance(AllyWormPos.x, AllyWormPos.y, closestPowerUptoAlly.x, closestPowerUptoAlly.y);
+                if (closestPoweruptoAllyDist < currentRange && closestPoweruptoAllyDist < 12) { // Never trigger if none left
+                    currentRange = closestPoweruptoAllyDist;
+                    currentClosestWormId = i + 1;
+                }
+            }
+        }
+        return currentClosestWormId;
+    }
 
 
     private List<List<Cell>> constructFireDirectionLines(int range) {
@@ -459,7 +546,9 @@ public class Bot {
         for (int i = x - 1; i <= x + 1; i++) {
             for (int j = y - 1; j <= y + 1; j++) {
                 // Don't include the current position
-                if (i != x && j != y && isValidCoordinate(i, j)) {
+                System.out.println(String.format("Cell %d %d", i, j));
+                if ((i != x || j != y) && isValidCoordinate(i, j)) {
+                    System.out.println(String.format("Cell After If %d %d", i, j));
                     cells.add(gameState.map[j][i]);
                 }
             }
@@ -507,7 +596,7 @@ public class Bot {
                 int allyWormShootRange = getShootRange(gameState, i + 1);
                 if (allyWormShootRange >= euclideanDistance(allyWormPos.x, allyWormPos.y, enemyWormPos.x, enemyWormPos.y)) {
                     if (isOnCardinalLineAtoB(allyWormPos, enemyWormPos)) {
-                        if (isNoDirtInBetweenCardinalAandB(allyWormPos, enemyWormPos)) {
+                        if (isNoDirtAndAllyInBetweenCardinalAandB(allyWormPos, enemyWormPos)) {
                             return true;
                         }
                     }
@@ -537,52 +626,136 @@ public class Bot {
 
     }
 
-    private boolean isNoDirtInBetweenCardinalAandB(Position a, Position b){
+    private boolean isNoDirtAndAllyInBetweenCardinalAandB(Position a, Position b){
         //ASUMSI POS A DAN POS BERADA DALAM CARDINAL DIRECTION SATU SAMA LAIN
+
         float[] gradComp = gradLineComponent(a,b);
+
         if (isOnCardinalLineAtoB(a,b)){
-            if (gradComp[0] >= 0) { // x2 - x1 >= 0
-                for (int i = 0 ; i <= gradComp[0]; i++) {
-                    if (gradComp[1] >= 0){
-                        for (int j = 0; j <= gradComp[1]; j++) {
-                            Cell currentCell = gameState.map[a.y+j][a.x+i];
-                            if (currentCell.type == CellType.DIRT) {
-                                return false;
-                            }
+            if (gradComp[0] == 0){
+                if (gradComp[1] > 0) {
+                    for (int j = 1; j <= Math.abs(gradComp[0]); j++) {
+                        Cell currentCell = gameState.map[a.y + j][a.x];
+                        if (currentCell.type == CellType.DIRT || isAllyOnCell(currentCell)) {
+                            return false;
                         }
                     }
-                    else {
-                        for (int j = 0; j >= gradComp[1]; j--){
-                            Cell currentCell = gameState.map[a.y+j][a.x+i];
-                            if (currentCell.type == CellType.DIRT) {
-                                return false;
-                            }
+                }
+                else if (gradComp[1] < 0) {
+                    for (int j = 1; j <= Math.abs(gradComp[0]); j++) {
+                        Cell currentCell = gameState.map[a.y - j][a.x];
+                        if (currentCell.type == CellType.DIRT || isAllyOnCell(currentCell)) {
+                            return false;
                         }
                     }
                 }
             }
-            else {
-                for (int i = 0 ; i >= gradComp[0]; i--) {
-                    if (gradComp[1] >= 0){
-                        for (int j = 0; j <= gradComp[1]; j++) {
-                            Cell currentCell = gameState.map[a.y+j][a.x+i];
-                            if (currentCell.type == CellType.DIRT) {
-                                return false;
-                            }
+            else if (gradComp[0] > 0){
+                if (gradComp[1] > 0) {
+                    for (int i = 1; i <= Math.abs(gradComp[0]); i++) {
+                        Cell currentCell = gameState.map[a.y + i][a.x + i];
+                        if (currentCell.type == CellType.DIRT || isAllyOnCell(currentCell)) {
+                            return false;
                         }
                     }
-                    else {
-                        for (int j = 0; j >= gradComp[1]; j--){
-                            Cell currentCell = gameState.map[a.y+j][a.x+i];
-                            if (currentCell.type == CellType.DIRT) {
-                                return false;
-                            }
+                }
+                else if (gradComp[1] < 0) {
+                    for (int i = 1; i <= Math.abs(gradComp[0]); i++) {
+                        Cell currentCell = gameState.map[a.y - i][a.x + i];
+                        if (currentCell.type == CellType.DIRT || isAllyOnCell(currentCell)) {
+                            return false;
+                        }
+                    }
+                }
+                else {
+                    for (int i = 1; i <= Math.abs(gradComp[0]); i++) {
+                        Cell currentCell = gameState.map[a.y][a.x + i];
+                        if (currentCell.type == CellType.DIRT || isAllyOnCell(currentCell)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            else if (gradComp[0] < 0){
+                if (gradComp[1] > 0) {
+                    for (int i = 1; i <= Math.abs(gradComp[0]); i++) {
+                        Cell currentCell = gameState.map[a.y + i][a.x + i];
+                        if (currentCell.type == CellType.DIRT || isAllyOnCell(currentCell)) {
+                            return false;
+                        }
+                    }
+                }
+                else if (gradComp[1] < 0) {
+                    for (int i = 1; i <= Math.abs(gradComp[0]); i++) {
+                        Cell currentCell = gameState.map[a.y - i][a.x - i];
+                        if (currentCell.type == CellType.DIRT || isAllyOnCell(currentCell)) {
+                            return false;
+                        }
+                    }
+                }
+                else {
+                    for (int i = 1; i <= Math.abs(gradComp[0]); i++) {
+                        Cell currentCell = gameState.map[a.y][a.x - i];
+                        if (currentCell.type == CellType.DIRT || isAllyOnCell(currentCell)) {
+                            return false;
                         }
                     }
                 }
             }
         }
+
+//        if (isOnCardinalLineAtoB(a,b)){
+//            if (gradComp[0] >= 0) { // x2 - x1 >= 0
+//                for (int i = 0 ; i <= gradComp[0]; i++) {
+//                    if (gradComp[1] >= 0){
+//                        for (int j = 0; j <= gradComp[1]; j++) {
+//                            Cell currentCell = gameState.map[a.y+j][a.x+i];
+//                            if (currentCell.type == CellType.DIRT) {
+//                                return false;
+//                            }
+//                        }
+//                    }
+//                    else {
+//                        for (int j = 0; j >= gradComp[1]; j--){
+//                            Cell currentCell = gameState.map[a.y+j][a.x+i];
+//                            if (currentCell.type == CellType.DIRT) {
+//                                return false;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            else {
+//                for (int i = 0 ; i >= gradComp[0]; i--) {
+//                    if (gradComp[1] >= 0){
+//                        for (int j = 0; j <= gradComp[1]; j++) {
+//                            Cell currentCell = gameState.map[a.y+j][a.x+i];
+//                            if (currentCell.type == CellType.DIRT) {
+//                                return false;
+//                            }
+//                        }
+//                    }
+//                    else {
+//                        for (int j = 0; j >= gradComp[1]; j--){
+//                            Cell currentCell = gameState.map[a.y+j][a.x+i];
+//                            if (currentCell.type == CellType.DIRT) {
+//                                return false;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
         return true;
+    }
+    private boolean isAllyOnCell(Cell cell){
+        for (int i = 0; i < 3; i++){
+            MyWorm allyWorm = gameState.myPlayer.worms[i];
+            if (allyWorm.health > 0 && allyWorm.position.x == cell.x && allyWorm.position.y == cell.y){
+                return true;
+            }
+        }
+        return false;
     }
     private float[] gradLineComponent(Position a, Position b){
         float xComp = b.x-a.x;
